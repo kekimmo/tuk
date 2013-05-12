@@ -14,6 +14,8 @@ extern "C" {
 }
 
 #include "exception.hpp"
+#include "vec.hpp"
+#include "selection.hpp"
 #include "texture.hpp"
 #include "level.hpp"
 #include "load_level.hpp"
@@ -61,26 +63,63 @@ void inner_main () {
     load_texture("tex/wall-LCT.png", TEXTURE_SIZE / 2),
   };
 
+  GLuint tex_sel = load_texture("tex/selection.png", TEXTURE_SIZE);
+
   Level* level = load_level("lev/test.lev");
 
   int frame = 0;
 
+  Vec<int> mouse(0, 0);
+
+  Selection sel;
+
   while (running) {
-    if (SDL_PollEvent(&event)) {
+    const auto tick = SDL_GetTicks();
+
+    while (SDL_PollEvent(&event)) {
       switch (event.type) {
         case SDL_QUIT:
           running = false;
           break;
+
+        case SDL_MOUSEMOTION:
+          mouse.x = event.motion.x;
+          mouse.y = event.motion.y;
+          if (sel.started) {
+            sel.update(mouse / TEXTURE_SIZE);
+          }
+          break;
+
+        case SDL_MOUSEBUTTONDOWN:
+          if (!sel.started) {
+            sel.start(mouse / TEXTURE_SIZE);
+            fprintf(stderr, "Started selection at (%d, %d)\n", sel.from.x, sel.from.y);
+          }
+          break;
+
+        case SDL_MOUSEBUTTONUP:
+          sel.finish();
+          break;
       }
     }
 
+    if (sel.finished) {
+      sel.foreach([level](int x, int y) {
+          level->tile(x, y).type = Tile::FLOOR;
+          level->tile(x, y).passable = true;
+      });
+    }
+
     glClear(GL_COLOR_BUFFER_BIT);
-    draw(*level, tile_textures, TEXTURE_SIZE);
+    draw(*level, tile_textures, TEXTURE_SIZE, sel, tex_sel);
+
     glEnd();
 
     SDL_GL_SwapBuffers();
-  }
 
+    const float fps = 1.0 / ((SDL_GetTicks() - tick) / 1000.0);
+    //fprintf(stderr, "FPS: %f\n", fps);
+  }
 }
 
 

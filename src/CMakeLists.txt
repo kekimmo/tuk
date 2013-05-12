@@ -7,5 +7,6 @@ add_executable(main
   tile.cpp
   load_level.cpp
   draw.cpp
+  selection.cpp
 )
 

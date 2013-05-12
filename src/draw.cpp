@@ -2,69 +2,86 @@
 #include "draw.hpp"
 
 
-void draw (const Level& level, const GLuint tile_textures[], int texture_size) {
+const int TILE_SIZE = 32;
+
+
+void draw (const Level& level, const GLuint tile_textures[], int texture_size,
+    const Selection& sel, GLuint sel_tex) {
+  
   for (int y = 0; y < level.h; ++y) {
     for (int x = 0; x < level.w; ++x) {
-      bool center = false;
+      draw_tile(level, x, y, tile_textures, texture_size);
+    }
+  }
 
-      const Tile& tile = level.tile(x, y);
+  if (sel.started) {
+    draw_selection(sel, texture_size, sel_tex);
+  }
+}
 
-      GLuint tex = tile_textures[tile.type - 1];
-      if (tile.type == Tile::WALL) {
-        auto w = [&level](int x, int y) {
-          return level.valid(x, y) && level.tile(x, y).type == Tile::WALL;
-        };
 
-        struct { int x; int y; } c[4][3] = {
-          {
-            { -1,  0 },
-            { -1, -1 },
-            {  0, -1 },
-          },
-          {
-            {  0, -1 },
-            {  1, -1 },
-            {  1,  0 },
-          },
-          {
-            {  1,  0 },
-            {  1,  1 },
-            {  0,  1 },
-          },
-          {
-            {  0,  1 },
-            { -1,  1 },
-            { -1,  0 },
-          },
-        };
+void draw_selection (const Selection& sel, int texture_size, GLuint sel_tex) {
+  sel.foreach([texture_size, sel_tex](int x, int y) {
+      draw_texture(x * texture_size, y * texture_size, sel_tex, texture_size);
+  });
+}
 
-        struct { int dx; int dy; } where[4] = {
-          { 0, 0 },
-          { 1, 0 },
-          { 1, 1 },
-          { 0, 1 },
-        };
 
-        for (int i = 0; i < 4; ++i) {
-          int p = 0;
-          int bit = 1;
-          for (int j = 0; j < 3; ++j) {
-            if (w(x + c[i][j].x, y + c[i][j].y)) {
-              p |= bit;
-            }
-            bit <<= 1;
-          }
+void draw_tile (const Level& level, int x, int y, const GLuint tile_textures[], int texture_size) {
+  const Tile& tile = level.tile(x, y);
 
-          const int tx = x * texture_size + where[i].dx * texture_size / 2;
-          const int ty = y * texture_size + where[i].dy * texture_size / 2;
+  draw_texture(texture_size * x, texture_size * y, tile_textures[0], texture_size);
 
-          draw_texture(tx, ty, tex + p, texture_size / 2, false, i * 90);
+  GLuint tex = tile_textures[tile.type - 1];
+  if (tile.type == Tile::WALL) {
+    auto w = [&level](int x, int y) {
+      return level.valid(x, y) && level.tile(x, y).type == Tile::WALL;
+    };
+
+    struct { int x; int y; } c[4][3] = {
+      {
+        { -1,  0 },
+        { -1, -1 },
+        {  0, -1 },
+      },
+      {
+        {  0, -1 },
+        {  1, -1 },
+        {  1,  0 },
+      },
+      {
+        {  1,  0 },
+        {  1,  1 },
+        {  0,  1 },
+      },
+      {
+        {  0,  1 },
+        { -1,  1 },
+        { -1,  0 },
+      },
+    };
+
+    struct { int dx; int dy; } where[4] = {
+      { 0, 0 },
+      { 1, 0 },
+      { 1, 1 },
+      { 0, 1 },
+    };
+
+    for (int i = 0; i < 4; ++i) {
+      int p = 0;
+      int bit = 1;
+      for (int j = 0; j < 3; ++j) {
+        if (w(x + c[i][j].x, y + c[i][j].y)) {
+          p |= bit;
         }
+        bit <<= 1;
+      }
 
-      }
-      else {
-        draw_texture(texture_size * x, texture_size * y, tex, texture_size);
-      }
+      const int tx = x * texture_size + where[i].dx * texture_size / 2;
+      const int ty = y * texture_size + where[i].dy * texture_size / 2;
+
+      draw_texture(tx, ty, tex + p, texture_size / 2, false, i * 90);
     }
   }
 }
