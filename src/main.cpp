@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <cstring>
 #include <cassert>
+#include <vector>
 
 #define GL_GLEXT_PROTOTYPES
 extern "C" {
@@ -20,6 +21,8 @@ extern "C" {
 #include "level.hpp"
 #include "load_level.hpp"
 #include "draw.hpp"
+#include "actor.hpp"
+#include "collide.hpp"
 
 
 const int TEXTURE_SIZE = 32;
@@ -64,12 +67,14 @@ void inner_main () {
   };
 
   GLuint tex_sel = load_texture("tex/selection.png", TEXTURE_SIZE);
+  GLuint tex_actor = load_texture("tex/actor.png", TEXTURE_SIZE);
 
   Level* level = load_level("lev/test.lev");
 
   int frame = 0;
 
   Vec<int> mouse(0, 0);
+  std::vector<Actor*> actors;
 
   Selection sel;
 
@@ -91,35 +96,65 @@ void inner_main () {
           break;
 
         case SDL_MOUSEBUTTONDOWN:
-          if (!sel.started) {
+          if (event.button.button == SDL_BUTTON_LEFT && !sel.started) {
             sel.start((mouse / TEXTURE_SIZE).clamped(level->w - 1, level->h - 1));
-            fprintf(stderr, "Started selection at (%d, %d)\n", sel.from.x, sel.from.y);
           }
           break;
 
         case SDL_MOUSEBUTTONUP:
-          sel.finish();
+          if (event.button.button == SDL_BUTTON_LEFT) {
+            sel.finish();
+            sel.foreach([level](int x, int y) {
+              level->tile(x, y).type = Tile::FLOOR;
+              level->tile(x, y).passable = true;
+            });
+          }
+          else if (event.button.button == SDL_BUTTON_RIGHT) {
+            actors.push_back(new Actor(mouse.x, mouse.y, 16));
+          }
+
           break;
       }
     }
 
-    if (sel.finished) {
-      sel.foreach([level](int x, int y) {
-          level->tile(x, y).type = Tile::FLOOR;
-          level->tile(x, y).passable = true;
-      });
+    for (int i = 0; i < 10; ++i) {
+      bool moved = false;
+      for (Actor* actor : actors) {
+        if (collide_level_actor(*level, *actor, TEXTURE_SIZE)) {
+          moved = true;
+        }
+      }
+      for (Actor* a : actors) {
+        for (Actor* b : actors) {
+          if (collide_actor_actor(*a, *b)) {
+            moved = true;
+          }
+        }
+      }
+      if (!moved) {
+        break;
+      }
     }
 
     glClear(GL_COLOR_BUFFER_BIT);
-    draw(*level, tile_textures, TEXTURE_SIZE, sel, tex_sel);
 
-    glEnd();
+    draw_level(*level, tile_textures, TEXTURE_SIZE);
+    if (sel.started) {
+      draw_selection(sel, TEXTURE_SIZE, tex_sel);
+    }
+    draw_actors(actors, TEXTURE_SIZE, tex_actor);
 
     SDL_GL_SwapBuffers();
 
     const float fps = 1.0 / ((SDL_GetTicks() - tick) / 1000.0);
     //fprintf(stderr, "FPS: %f\n", fps);
   }
+
+  for (Actor* actor : actors) {
+    delete actor;
+  }
+
+  actors.clear();
 }
 
 

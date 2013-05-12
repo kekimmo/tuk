@@ -8,5 +8,7 @@ add_executable(main
   load_level.cpp
   draw.cpp
   selection.cpp
+  actor.cpp
+  collide.cpp
 )
 

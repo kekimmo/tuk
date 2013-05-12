@@ -5,17 +5,12 @@
 const int TILE_SIZE = 32;
 
 
-void draw (const Level& level, const GLuint tile_textures[], int texture_size,
-    const Selection& sel, GLuint sel_tex) {
-  
+void draw_level (const Level& level, const GLuint tile_textures[], int texture_size)
+{
   for (int y = 0; y < level.h; ++y) {
     for (int x = 0; x < level.w; ++x) {
       draw_tile(level, x, y, tile_textures, texture_size);
     }
-  }
-
-  if (sel.started) {
-    draw_selection(sel, texture_size, sel_tex);
   }
 }
 
@@ -24,6 +19,13 @@ void draw_selection (const Selection& sel, int texture_size, GLuint sel_tex) {
   sel.foreach([texture_size, sel_tex](int x, int y) {
       draw_texture(x * texture_size, y * texture_size, sel_tex, texture_size);
   });
+}
+
+
+void draw_actors (const std::vector<Actor*>& actors, int texture_size, GLuint tex_actor) {
+  for (const Actor* actor : actors) {
+    draw_texture(actor->p.x, actor->p.y, tex_actor, texture_size, true);
+  }
 }
 
 
