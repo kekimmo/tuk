@@ -1,13 +1,10 @@
 
-#include <cstring>
-#include <cerrno>
+#include "texture.hpp"
+#include "exception.hpp"
 
 extern "C" {
   #include <png.h>
 }
-
-#include "exception.hpp"
-#include "texture.hpp"
 
 
 GLuint load_texture (const char* filename, const int texture_size) {

@@ -1,5 +1,4 @@
 
-
 #include <cstdio>
 #include <cmath>
 #include <cstdarg>
@@ -16,6 +15,9 @@ extern "C" {
 
 #include "exception.hpp"
 #include "texture.hpp"
+#include "level.hpp"
+#include "load_level.hpp"
+#include "draw.hpp"
 
 
 const int TEXTURE_SIZE = 32;
@@ -49,10 +51,17 @@ void inner_main () {
 
   GLuint tile_textures[] = {
     load_texture("tex/floor.png", TEXTURE_SIZE),
-    load_texture("tex/wall.png", TEXTURE_SIZE),
-    load_texture("tex/door.png", TEXTURE_SIZE),
-    load_texture("tex/door-open.png", TEXTURE_SIZE)
+    load_texture("tex/wall.png", TEXTURE_SIZE / 2),
+    load_texture("tex/wall-L.png", TEXTURE_SIZE / 2),
+    load_texture("tex/wall-C.png", TEXTURE_SIZE / 2),
+    load_texture("tex/wall-LC.png", TEXTURE_SIZE / 2),
+    load_texture("tex/wall-T.png", TEXTURE_SIZE / 2),
+    load_texture("tex/wall-LT.png", TEXTURE_SIZE / 2),
+    load_texture("tex/wall-CT.png", TEXTURE_SIZE / 2),
+    load_texture("tex/wall-LCT.png", TEXTURE_SIZE / 2),
   };
+
+  Level* level = load_level("lev/test.lev");
 
   int frame = 0;
 
@@ -66,7 +75,7 @@ void inner_main () {
     }
 
     glClear(GL_COLOR_BUFFER_BIT);
-    //draw(tile_textures);
+    draw(*level, tile_textures, TEXTURE_SIZE);
     glEnd();
 
     SDL_GL_SwapBuffers();

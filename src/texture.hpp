@@ -1,6 +1,5 @@
-#ifndef TEXTURE_HPP_PTTPVNAG
-#define TEXTURE_HPP_PTTPVNAG
-
+#ifndef TUK_TEXTURE_HPP
+#define TUK_TEXTURE_HPP
 
 extern "C" {
   #include <GL/gl.h>
@@ -13,5 +12,5 @@ const int NULL_TEXTURE = 0;
 GLuint load_texture (const char* filename, const int texture_size);
 
 
-#endif /* end of include guard: TEXTURE_HPP_PTTPVNAG */
+#endif // TUK_TEXTURE_HPP
 
