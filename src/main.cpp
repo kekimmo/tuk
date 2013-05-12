@@ -14,13 +14,14 @@ extern "C" {
   #include <GL/glu.h>
 }
 
+#include "exception.hpp"
 #include "texture.hpp"
 
 
 const int TEXTURE_SIZE = 32;
 
 
-int main (int argc, char *argv[]) {
+void inner_main () {
   SDL_Init(SDL_INIT_VIDEO);
 
   SDL_Event event;
@@ -47,10 +48,10 @@ int main (int argc, char *argv[]) {
   glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
   GLuint tile_textures[] = {
-    load_texture("floor.png", TEXTURE_SIZE),
-    load_texture("wall.png", TEXTURE_SIZE),
-    load_texture("door.png", TEXTURE_SIZE),
-    load_texture("door-open.png", TEXTURE_SIZE)
+    load_texture("tex/floor.png", TEXTURE_SIZE),
+    load_texture("tex/wall.png", TEXTURE_SIZE),
+    load_texture("tex/door.png", TEXTURE_SIZE),
+    load_texture("tex/door-open.png", TEXTURE_SIZE)
   };
 
   int frame = 0;
@@ -69,6 +70,17 @@ int main (int argc, char *argv[]) {
     glEnd();
 
     SDL_GL_SwapBuffers();
+  }
+
+}
+
+
+int main (int argc, char *argv[]) {
+  try {
+    inner_main();
+  }
+  catch (const Exception& e) {
+    fprintf(stderr, "\n%s\n", e.message());
   }
 
   SDL_Quit();

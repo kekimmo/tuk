@@ -7,6 +7,9 @@ extern "C" {
 }
 
 
+const int NULL_TEXTURE = 0;
+
+
 GLuint load_texture (const char* filename, const int texture_size);
 
 
