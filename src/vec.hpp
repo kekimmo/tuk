@@ -21,6 +21,10 @@ struct Vec {
   bool equals (const T x2, const T y2) const {
     return x == x2 && y == y2;
   }
+
+  Vec clamped (const T x_max, const T y_max) const {
+    return Vec(x < x_max ? x : x_max, y < y_max ? y : y_max);
+  }
 };
 
 

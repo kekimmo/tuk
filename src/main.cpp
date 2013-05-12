@@ -86,13 +86,13 @@ void inner_main () {
           mouse.x = event.motion.x;
           mouse.y = event.motion.y;
           if (sel.started) {
-            sel.update(mouse / TEXTURE_SIZE);
+            sel.update((mouse / TEXTURE_SIZE).clamped(level->w - 1, level->h - 1));
           }
           break;
 
         case SDL_MOUSEBUTTONDOWN:
           if (!sel.started) {
-            sel.start(mouse / TEXTURE_SIZE);
+            sel.start((mouse / TEXTURE_SIZE).clamped(level->w - 1, level->h - 1));
             fprintf(stderr, "Started selection at (%d, %d)\n", sel.from.x, sel.from.y);
           }
           break;
