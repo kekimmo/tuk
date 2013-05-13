@@ -12,6 +12,8 @@ extern "C" {
   #include <SDL/SDL.h>
   #include <GL/gl.h>
   #include <GL/glu.h>
+  #include <sys/stat.h>
+  #include <fcntl.h>
 }
 
 #include "exception.hpp"
@@ -23,9 +25,42 @@ extern "C" {
 #include "draw.hpp"
 #include "actor.hpp"
 #include "collide.hpp"
+#include "save.hpp"
 
 
 const int TEXTURE_SIZE = 32;
+
+
+void save_state (const Level& level) {
+  char name[8];
+
+  int num = 0;
+  int fd = -1;
+
+  do {
+    if (num > 999) {
+      raise("More than %d save files!", 999);
+    }
+    snprintf(name, 8, "%03d.sav", num);
+    num += 1;
+    fd = open(name, O_CREAT | O_EXCL | O_WRONLY, 0644);
+    if (fd == -1 && errno != EEXIST) {
+      raise("Failed to open save file %s: %s", name, std::strerror(errno));
+    }
+  }
+  while (fd == -1);
+
+  FILE* file = fdopen(fd, "wb");
+  if (file == NULL) {
+    raise("Failed to open save file %s: %s", name, std::strerror(errno));
+  }
+
+  save(file, level);
+
+  fclose(file); // this also closes fd
+
+  printf("Saved: %s\n", name);
+}
 
 
 void inner_main () {
@@ -38,8 +73,7 @@ void inner_main () {
   const int win_h = 600;
 
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-  SDL_Surface* screen = SDL_SetVideoMode(win_w, win_h, 32, SDL_OPENGL);
+  SDL_SetVideoMode(win_w, win_h, 32, SDL_OPENGL);
 
   glClearColor(255, 255, 255, 0);
   glViewport(0, 0, win_w, win_h);
@@ -69,9 +103,11 @@ void inner_main () {
   GLuint tex_sel = load_texture("tex/selection.png", TEXTURE_SIZE);
   GLuint tex_actor = load_texture("tex/actor.png", TEXTURE_SIZE);
 
-  Level* level = load_level("lev/test.lev");
+  //Level* level = load_level("lev/test.lev");
+  LoadState state = load("003.sav");
+  Level* level = state.level;
 
-  int frame = 0;
+  /* int frame = 0; */
 
   Vec<int> mouse(0, 0);
   std::vector<Actor*> actors;
@@ -79,13 +115,23 @@ void inner_main () {
   Selection sel;
 
   while (running) {
-    const auto tick = SDL_GetTicks();
+    /* const auto tick = SDL_GetTicks(); */
 
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
         case SDL_QUIT:
           running = false;
           break;
+
+        case SDL_KEYUP:
+          switch (event.key.keysym.sym) {
+            case SDLK_s:
+              save_state(*level);
+              break;
+
+            default:
+              break;
+          }
 
         case SDL_MOUSEMOTION:
           mouse.x = event.motion.x;
@@ -146,7 +192,7 @@ void inner_main () {
 
     SDL_GL_SwapBuffers();
 
-    const float fps = 1.0 / ((SDL_GetTicks() - tick) / 1000.0);
+    /* const float fps = 1.0 / ((SDL_GetTicks() - tick) / 1000.0); */
     //fprintf(stderr, "FPS: %f\n", fps);
   }
 
