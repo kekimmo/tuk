@@ -23,7 +23,7 @@ struct UI {
   struct {
     bool tiles = true;
     bool actors = true;
-    bool paths = false;
+    bool paths = true;
   } layers;
 
   UI (const Level& level);
@@ -33,9 +33,12 @@ struct UI {
   void mouse_down ();
   void mouse_up ();
 
+  // Get the tile the mouse is on
+  Point mouse_tile () const;
+
   private:
     // Convert to tile coordinates
-    Point tc (const Point& p);
+    Point tc (const Point& p) const;
 };
 
 

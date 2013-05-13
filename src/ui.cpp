@@ -54,7 +54,12 @@ void UI::mouse_up () {
 }
 
 
-Point UI::tc (const Point& p) {
+Point UI::mouse_tile () const {
+  return tc(mouse).clamped(0, 0, level.w - 1, level.h - 1);
+}
+
+
+Point UI::tc (const Point& p) const {
   return p / TILE_SIZE;
 }
 

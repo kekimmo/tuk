@@ -18,7 +18,7 @@ class Task {
 
 class GoTask : public Task {
   public:
-    GoTask (const Level& level, Actor& actor, const Vec<int>& target);
+    GoTask (const Level& level, Actor& actor, const Point& target);
 
     virtual Action* work (DebugInfo& dbg) override;
     virtual bool ready () const override;
@@ -26,8 +26,32 @@ class GoTask : public Task {
   private:
     const Level& _level;
     Actor& _actor;
-    const Vec<int> _target;
+    const Point _target;
     std::list<Point> _path;
+};
+
+
+class DigTask : public Task {
+  public:
+    DigTask (Level& level, Actor& actor, const Point& target);
+
+    virtual Action* work (DebugInfo& dbg) override;
+    virtual bool ready () const override;
+
+  private:
+    bool find_digging_place (Point& point) const;
+    Level& _level;
+    Actor& _actor;
+    const Point _target;
+    Point _digging_place;
+    Task* _subtask;
+    enum {
+      STARTING,
+      FINDING,
+      DIGGING,
+      DONE,
+    } _state;
+
 };
 
 

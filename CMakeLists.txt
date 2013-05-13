@@ -10,6 +10,7 @@ find_package(OpenGL)
 find_package(PNG)
 
 link_libraries(
+  m
   ${SDL_LIBRARY}
   ${OPENGL_LIBRARY}
   ${PNG_LIBRARY}

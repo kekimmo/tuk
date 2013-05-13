@@ -30,6 +30,7 @@ extern "C" {
 #include "task.hpp"
 #include "save.hpp"
 #include "ui.hpp"
+#include "path.hpp"
 
 
 const int TILE_SIZE = 32;
@@ -81,6 +82,7 @@ struct Textures {
   GLuint selection;
   GLuint actor;
   GLuint path;
+  GLuint remove;
   GLuint tiles[9];
 };
 
@@ -116,6 +118,7 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
     bool advance = false;
 
     while (SDL_PollEvent(&event)) {
+      Point mouse_tile = ui.mouse_tile();
       switch (event.type) {
         case SDL_QUIT:
           running = false;
@@ -156,6 +159,10 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
               break;
             case SDLK_3:
               toggle(ui.layers.paths);
+              break;
+
+            case SDLK_q:
+              fprintf(stderr, "(%d, %d)\n", mouse_tile.x, mouse_tile.y);
               break;
 
             case SDLK_SPACE:
@@ -203,6 +210,12 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
       draw_actors(occupied_tiles, TILE_SIZE, tex.actor);
     }
 
+    /* dbg.paths.clear(); */
+    /* std::list<Point> path; */
+    /* if (find_path(path, level, actors[0]->p, ui.mouse_tile())) { */
+    /*   dbg.paths.push_back(path); */
+    /* } */
+
     if (ui.layers.paths) {
       for (const auto& path : dbg.paths) {
         for (const auto& p : path) {
@@ -229,6 +242,7 @@ Textures load_textures () {
     load_texture("tex/selection.png", TILE_SIZE),
     load_texture("tex/actor.png", TILE_SIZE / 2),
     load_texture("tex/path.png", TILE_SIZE),
+    load_texture("tex/remove.png", TILE_SIZE),
     {
       load_texture("tex/floor.png", TILE_SIZE),
       load_texture("tex/wall.png", TILE_SIZE / 2),
@@ -269,15 +283,16 @@ void inner_main () {
   glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
   Textures tex = load_textures();
-
+  
   //Level* level = load_level("lev/test.lev");
   LoadState state;
-  load("006.sav", state);
+  load("007.sav", state);
 
   Level* level = state.level;
   auto& actors = state.actors;
   std::vector<Task*> tasks;
-  tasks.push_back(new GoTask(*level, *actors[0], Vec<int>(0, 0)));
+  //tasks.push_back(new DigTask(*level, *actors[0], Vec<int>(9, 6)));
+  tasks.push_back(new DigTask(*level, *actors[0], Point(9, 6)));
 
   game_main(tex, *level, actors, tasks);
 

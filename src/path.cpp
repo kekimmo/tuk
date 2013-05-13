@@ -1,15 +1,11 @@
 
 #include "path.hpp"
+#include <cmath>
 #include <set>
 #include <map>
 
 
 using namespace std;
-
-
-int h (const Point& a, const Point& b) {
-  return d_squared(a, b);
-}
 
 
 bool neighbors (list<Point>& out, const Level& level,
@@ -41,15 +37,15 @@ bool neighbors (list<Point>& out, const Level& level,
   // Drop nonexistent tiles
   p[0] = y > 0;
   p[1] = x > 0;
-  p[2] = x < level.w;
-  p[3] = y < level.h;
+  p[2] = x < level.w - 1;
+  p[3] = y < level.h - 1;
   p[4] = p[0] && p[1];
   p[5] = p[0] && p[2];
   p[6] = p[1] && p[3];
   p[7] = p[2] && p[3];
 
   // Drop unpassable side tiles
-  for (int i = 0; i < 4; ++i) {
+  for (int i = 0; i < 4; ++i) { 
     p[i] = p[i] &&
       level.passable(x + coords[i].x, y + coords[i].y);
   }
@@ -92,17 +88,24 @@ bool neighbors (list<Point>& out, const Level& level,
 
 bool find_path (list<Point>& path, const Level& level, const Point& a, const Point& b) {
   set<Point> closed;
-  set<Point> open;
   map<Point, Point> from;
 
   map<Point, int> g;
   map<Point, int> f;
+
+  auto h = d_squared<int>;
+
+  auto f_less = [&f](const Point& p1, const Point& p2) -> bool {
+    return f[p1] < f[p2];
+  };
+  multiset<Point, decltype(f_less)> open(f_less);
 
   open.insert(a);
 
   g[a] = 0;
   f[a] = 0 + h(a, b);
 
+  list<Point> neigh;
   while (!open.empty()) {
     Point current = *open.cbegin();
     if (current == b) {
@@ -117,10 +120,10 @@ bool find_path (list<Point>& path, const Level& level, const Point& a, const Poi
     open.erase(open.begin());
     closed.insert(current);
 
-    list<Point> neigh;
+    neigh.clear();
     if (neighbors(neigh, level, current)) {
-      for (Point n : neigh) {
-        const int tent_g = g[current] + d_squared(current, n);
+      for (const Point& n : neigh) {
+        const int tent_g = g[current] + h(current, n);
         if (closed.count(n) && tent_g >= g[n]) {
           continue;
         }
@@ -128,7 +131,7 @@ bool find_path (list<Point>& path, const Level& level, const Point& a, const Poi
         if (!open.count(n) || tent_g < g[n]) {
           from[n] = current;
           g[n] = tent_g;
-          f[n] = tent_g + h(a, b);
+          f[n] = tent_g + h(n, b);
           open.insert(n);
         }
       }
@@ -137,5 +140,16 @@ bool find_path (list<Point>& path, const Level& level, const Point& a, const Poi
 
   // No path
   return false;
+}
+
+
+int find_path_length (const Level& level, const Point& a, const Point& b) {
+  list<Point> path;
+  if (find_path(path, level, a, b)) {
+    return path.size();
+  }
+  else {
+    return -1;
+  }
 }
 

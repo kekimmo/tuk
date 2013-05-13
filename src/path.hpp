@@ -8,6 +8,7 @@
 
 bool find_path (std::list<Point>& path, const Level& level, const Point& a, const Point& b);
 
+int find_path_length (const Level& level, const Point& a, const Point& b);
 
 #endif /* end of include guard: PATH_HPP_WQNO3E8M */
 

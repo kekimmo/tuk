@@ -18,3 +18,13 @@ void MoveAction::perform () const {
   actor.p = target;
 }
 
+
+DigAction::DigAction (Actor& actor, const Point& target, Level& level)
+  : Action(actor), target(target), level(level) {
+}
+
+void DigAction::perform () const {
+  level.tile(target.x, target.y).passable = true;
+  level.tile(target.x, target.y).type = Tile::FLOOR;
+}
+

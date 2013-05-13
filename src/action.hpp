@@ -4,6 +4,7 @@
 
 #include "vec.hpp"
 #include "actor.hpp"
+#include "level.hpp"
 
 
 struct Action {
@@ -26,7 +27,17 @@ struct MoveAction : public Action {
 
   virtual void perform () const override;
 
-  const Point& target;
+  const Point target;
+};
+
+
+struct DigAction : public Action {
+  DigAction (Actor& actor, const Point& target, Level& level);
+
+  virtual void perform () const override;
+
+  const Point target;
+  Level& level;
 };
 
 
