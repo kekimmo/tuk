@@ -76,9 +76,6 @@ double dot_product (double x1, double y1, double x2, double y2) {
 Vec<double> find_push (double dirx, double diry, double thwx, double thwy, double r, double tp_len) {
   const double dp = dot_product(dirx, diry, thwx, thwy);
 
-  const double tprox = dp * dirx;
-  const double tproy = dp * diry;
-
   double push_len = r + dp - tp_len;
   if (push_len < 0.0) {
     push_len = 0.0;

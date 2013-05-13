@@ -11,5 +11,6 @@ add_executable(main
   actor.cpp
   collide.cpp
   save.cpp
+  task.cpp
 )
 

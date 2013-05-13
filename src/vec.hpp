@@ -18,6 +18,12 @@ struct Vec {
     return Vec(x / divisor, y / divisor);
   }
 
+
+  bool operator== (const Vec<T>& other) const {
+    return x == other.x && y == other.y;
+  }
+
+
   bool equals (const T x2, const T y2) const {
     return x == x2 && y == y2;
   }
