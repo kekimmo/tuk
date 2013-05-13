@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cassert>
 #include <vector>
+#include <algorithm>
 
 #define GL_GLEXT_PROTOTYPES
 extern "C" {
@@ -28,7 +29,7 @@ extern "C" {
 #include "save.hpp"
 
 
-const int TEXTURE_SIZE = 32;
+const int TILE_SIZE = 32;
 
 
 void save_state (const Level& level, const std::vector<Actor*>& actors) {
@@ -75,14 +76,32 @@ struct Textures {
 };
 
 
+void work_on_tasks (const std::vector<Task*>& tasks) {
+  for (Task* task : tasks) {
+    const Action* action = task->work();
+    action->perform();
+    delete action;
+  }
+}
+
+
+void remove_finished_tasks (std::vector<Task*>& tasks) {
+  std::remove_if(tasks.begin(), tasks.end(), [](const Task* task) {
+    return task->ready(); 
+  });
+}
+
+
 void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, std::vector<Task*> tasks) {
   Vec<int> mouse(0, 0);
 
   Selection sel;
   bool running = true;
+  bool freerun = false;
 
   while (running) {
     SDL_Event event;
+    bool advance = false;
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
         case SDL_QUIT:
@@ -91,6 +110,11 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
 
         case SDL_KEYUP:
           switch (event.key.keysym.sym) {
+            // Toggle free running
+            case SDLK_f:
+              freerun = !freerun;
+              break;
+
             // Save
             case SDLK_s:
               save_state(level, actors);
@@ -110,6 +134,10 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
               }
               break;
 
+            case SDLK_SPACE:
+              advance = true;
+              break;
+
             default:
               break;
           }
@@ -118,13 +146,13 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
           mouse.x = event.motion.x;
           mouse.y = event.motion.y;
           if (sel.started) {
-            sel.update((mouse / TEXTURE_SIZE).clamped(level.w - 1, level.h - 1));
+            sel.update((mouse / TILE_SIZE).clamped(level.w - 1, level.h - 1));
           }
           break;
 
         case SDL_MOUSEBUTTONDOWN:
           if (event.button.button == SDL_BUTTON_LEFT && !sel.started) {
-            sel.start((mouse / TEXTURE_SIZE).clamped(level.w - 1, level.h - 1));
+            sel.start((mouse / TILE_SIZE).clamped(level.w - 1, level.h - 1));
           }
           break;
 
@@ -144,41 +172,42 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
       }
     }
 
-    for (Task* task : tasks) {
-      const Action* action = task->work();
-      action->perform();
-      delete action;
+    if (freerun || advance) {
+      work_on_tasks(tasks);
+      remove_finished_tasks(tasks);
     }
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    draw_level(level, tex.tiles, TEXTURE_SIZE);
+    draw_level(level, tex.tiles, TILE_SIZE);
     if (sel.started) {
-      draw_selection(sel, TEXTURE_SIZE, tex.selection);
+      draw_selection(sel, TILE_SIZE, tex.selection);
     }
-    draw_actors(actors, TEXTURE_SIZE, tex.actor);
+    draw_actors(actors, TILE_SIZE, tex.actor);
 
     SDL_GL_SwapBuffers();
 
-    SDL_Delay(100);
+    if (freerun) {
+      SDL_Delay(100);
+    }
   }
 }
 
 
 Textures load_textures () {
   Textures tex = {
-    load_texture("tex/selection.png", TEXTURE_SIZE),
-    load_texture("tex/actor.png", TEXTURE_SIZE),
+    load_texture("tex/selection.png", TILE_SIZE),
+    load_texture("tex/actor.png", TILE_SIZE / 2),
     {
-      load_texture("tex/floor.png", TEXTURE_SIZE),
-      load_texture("tex/wall.png", TEXTURE_SIZE / 2),
-      load_texture("tex/wall-L.png", TEXTURE_SIZE / 2),
-      load_texture("tex/wall-C.png", TEXTURE_SIZE / 2),
-      load_texture("tex/wall-LC.png", TEXTURE_SIZE / 2),
-      load_texture("tex/wall-T.png", TEXTURE_SIZE / 2),
-      load_texture("tex/wall-LT.png", TEXTURE_SIZE / 2),
-      load_texture("tex/wall-CT.png", TEXTURE_SIZE / 2),
-      load_texture("tex/wall-LCT.png", TEXTURE_SIZE / 2),
+      load_texture("tex/floor.png", TILE_SIZE),
+      load_texture("tex/wall.png", TILE_SIZE / 2),
+      load_texture("tex/wall-L.png", TILE_SIZE / 2),
+      load_texture("tex/wall-C.png", TILE_SIZE / 2),
+      load_texture("tex/wall-LC.png", TILE_SIZE / 2),
+      load_texture("tex/wall-T.png", TILE_SIZE / 2),
+      load_texture("tex/wall-LT.png", TILE_SIZE / 2),
+      load_texture("tex/wall-CT.png", TILE_SIZE / 2),
+      load_texture("tex/wall-LCT.png", TILE_SIZE / 2),
     },
   };
 
