@@ -12,5 +12,6 @@ add_executable(main
   save.cpp
   task.cpp
   path.cpp
+  action.cpp
 )
 

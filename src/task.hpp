@@ -3,22 +3,23 @@
 
 
 #include "actor.hpp"
+#include "action.hpp"
 #include "level.hpp"
 
 
 class Task {
   public:
     virtual ~Task () {}
-    virtual void work () = 0;
+    virtual Action* work () = 0;
     virtual bool ready () const = 0;
 };
 
 
-class MoveTask : public Task {
+class GoTask : public Task {
   public:
-    MoveTask (const Level& level, Actor& actor, const Vec<int>& target);
+    GoTask (const Level& level, Actor& actor, const Vec<int>& target);
 
-    virtual void work () override;
+    virtual Action* work () override;
     virtual bool ready () const override;
 
   private:

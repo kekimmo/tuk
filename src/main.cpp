@@ -145,7 +145,9 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
     }
 
     for (Task* task : tasks) {
-      task->work();
+      const Action* action = task->work();
+      action->perform();
+      delete action;
     }
 
     glClear(GL_COLOR_BUFFER_BIT);
@@ -215,7 +217,7 @@ void inner_main () {
   Level* level = state.level;
   auto& actors = state.actors;
   std::vector<Task*> tasks;
-  tasks.push_back(new MoveTask(*level, *actors[0], Vec<int>(0, 0)));
+  tasks.push_back(new GoTask(*level, *actors[0], Vec<int>(0, 0)));
 
   game_main(tex, *level, actors, tasks);
 
