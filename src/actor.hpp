@@ -8,10 +8,8 @@
 class Actor {
   public:
     Vec<int> p;
-    int radius;
-    int heading;
 
-    Actor (int x, int y, int radius, int heading = 0);
+    Actor (int x, int y);
 };
 
 

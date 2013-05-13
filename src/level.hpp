@@ -12,6 +12,7 @@ public:
 
   bool valid (int x, int y) const;
   Tile& tile (int x, int y) const;
+  bool passable (int x, int y) const;
 
   const int w;
   const int h;

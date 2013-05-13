@@ -9,8 +9,8 @@ add_executable(main
   draw.cpp
   selection.cpp
   actor.cpp
-  collide.cpp
   save.cpp
   task.cpp
+  path.cpp
 )
 

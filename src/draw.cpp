@@ -24,7 +24,7 @@ void draw_selection (const Selection& sel, int texture_size, GLuint sel_tex) {
 
 void draw_actors (const std::vector<Actor*>& actors, int texture_size, GLuint tex_actor) {
   for (const Actor* actor : actors) {
-    draw_texture(actor->p.x, actor->p.y, tex_actor, texture_size, true);
+    draw_texture(texture_size * actor->p.x, texture_size * actor->p.y, tex_actor, texture_size);
   }
 }
 

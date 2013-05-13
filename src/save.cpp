@@ -18,8 +18,8 @@ void save (FILE* file, const SaveState& state) {
 void save_actors (FILE* file, const std::vector<Actor*>& actors) {
   fprintf(file, "Actors: %ld\n", actors.size());
   for (const Actor* actor : actors) {
-    fprintf(file, "(%d, %d): %d\n",
-        actor->p.x, actor->p.y, actor->radius);
+    fprintf(file, "(%d, %d)\n",
+        actor->p.x, actor->p.y);
   }
 }
 
@@ -85,11 +85,11 @@ void load_actors (FILE* file, std::vector<Actor*>& actors) {
   actors.reserve(size);
 
   for (int i = 0; i < size; ++i) {
-    int x, y, radius;
-    if (fscanf(file, "(%d, %d): %d\n", &x, &y, &radius) != 3) {
+    int x, y;
+    if (fscanf(file, "(%d, %d)\n", &x, &y) != 2) {
       raise(fmt, "Invalid actor!");
     }
-    actors.push_back(new Actor(x, y, radius));
+    actors.push_back(new Actor(x, y));
   }
 }
 

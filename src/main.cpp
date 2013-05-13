@@ -24,7 +24,6 @@ extern "C" {
 #include "load_level.hpp"
 #include "draw.hpp"
 #include "actor.hpp"
-#include "collide.hpp"
 #include "task.hpp"
 #include "save.hpp"
 
@@ -138,7 +137,7 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
             });
           }
           else if (event.button.button == SDL_BUTTON_RIGHT) {
-            actors.push_back(new Actor(mouse.x, mouse.y, 16));
+            actors.push_back(new Actor(mouse.x, mouse.y));
           }
 
           break;
@@ -147,25 +146,6 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
 
     for (Task* task : tasks) {
       task->work();
-    }
-
-    for (int i = 0; i < 10; ++i) {
-      bool moved = false;
-      for (Actor* actor : actors) {
-        if (collide_level_actor(level, *actor, TEXTURE_SIZE)) {
-          moved = true;
-        }
-      }
-      for (Actor* a : actors) {
-        for (Actor* b : actors) {
-          if (collide_actor_actor(*a, *b)) {
-            moved = true;
-          }
-        }
-      }
-      if (!moved) {
-        break;
-      }
     }
 
     glClear(GL_COLOR_BUFFER_BIT);
@@ -177,6 +157,8 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
     draw_actors(actors, TEXTURE_SIZE, tex.actor);
 
     SDL_GL_SwapBuffers();
+
+    SDL_Delay(100);
   }
 }
 
@@ -233,7 +215,7 @@ void inner_main () {
   Level* level = state.level;
   auto& actors = state.actors;
   std::vector<Task*> tasks;
-  tasks.push_back(new MoveTask(*level, *actors[0], Vec<int>(15, 15)));
+  tasks.push_back(new MoveTask(*level, *actors[0], Vec<int>(0, 0)));
 
   game_main(tex, *level, actors, tasks);
 
