@@ -13,5 +13,6 @@ add_executable(main
   task.cpp
   path.cpp
   action.cpp
+  ui.cpp
 )
 

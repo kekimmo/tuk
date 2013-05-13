@@ -39,6 +39,12 @@ struct Vec {
     return Vec(x < x_max ? x : x_max, y < y_max ? y : y_max);
   }
 
+  Vec clamped (const T x_min, const T y_min, const T x_max, const T y_max) const {
+    return Vec(
+        x < x_min ? x_min : (x < x_max ? x : x_max),
+        y < y_min ? y_min : (y < y_max ? y : y_max));
+  }
+
 };
 
 

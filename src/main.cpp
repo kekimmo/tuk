@@ -29,9 +29,15 @@ extern "C" {
 #include "actor.hpp"
 #include "task.hpp"
 #include "save.hpp"
+#include "ui.hpp"
 
 
 const int TILE_SIZE = 32;
+
+
+void toggle (bool& var) {
+  var = !var;
+}
 
 
 void save_state (const Level& level, const std::vector<Actor*>& actors) {
@@ -74,13 +80,14 @@ void save_state (const Level& level, const std::vector<Actor*>& actors) {
 struct Textures {
   GLuint selection;
   GLuint actor;
+  GLuint path;
   GLuint tiles[9];
 };
 
 
-void work_on_tasks (const std::vector<Task*>& tasks) {
+void work_on_tasks (DebugInfo& dbg, const std::vector<Task*>& tasks) {
   for (Task* task : tasks) {
-    const Action* action = task->work();
+    const Action* action = task->work(dbg);
     action->perform();
     delete action;
   }
@@ -97,14 +104,17 @@ void remove_finished_tasks (std::vector<Task*>& tasks) {
 void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, std::vector<Task*> tasks) {
   Vec<int> mouse(0, 0);
 
-  Selection sel;
   bool running = true;
   bool freerun = false;
   std::map<Point, std::list<const Actor*>> occupied_tiles;
 
+  UI ui(level);
+  DebugInfo dbg;
+
   while (running) {
     SDL_Event event;
     bool advance = false;
+
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
         case SDL_QUIT:
@@ -137,6 +147,17 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
               }
               break;
 
+            // To draw or not to draw
+            case SDLK_1:
+              toggle(ui.layers.tiles);
+              break;
+            case SDLK_2:
+              toggle(ui.layers.actors);
+              break;
+            case SDLK_3:
+              toggle(ui.layers.paths);
+              break;
+
             case SDLK_SPACE:
               advance = true;
               break;
@@ -146,38 +167,24 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
           }
 
         case SDL_MOUSEMOTION:
-          mouse.x = event.motion.x;
-          mouse.y = event.motion.y;
-          if (sel.started) {
-            sel.update((mouse / TILE_SIZE).clamped(level.w - 1, level.h - 1));
-          }
+          ui.mouse_move(event.motion.x, event.motion.y);
           break;
 
         case SDL_MOUSEBUTTONDOWN:
-          if (event.button.button == SDL_BUTTON_LEFT && !sel.started) {
-            sel.start((mouse / TILE_SIZE).clamped(level.w - 1, level.h - 1));
-          }
+          ui.mouse_move(event.button.x, event.button.y);
+          ui.mouse_down();
           break;
 
         case SDL_MOUSEBUTTONUP:
-          if (event.button.button == SDL_BUTTON_LEFT) {
-            sel.finish();
-            sel.foreach([&level](int x, int y) {
-              level.tile(x, y).type = Tile::FLOOR;
-              level.tile(x, y).passable = true;
-            });
-          }
-          else if (event.button.button == SDL_BUTTON_RIGHT) {
-            const Point tile = (mouse / TILE_SIZE).clamped(level.w - 1, level.h - 1);
-            actors.push_back(new Actor(tile.x, tile.y));
-          }
-
+          ui.mouse_move(event.button.x, event.button.y);
+          ui.mouse_up();
           break;
       }
     }
 
     if (freerun || advance) {
-      work_on_tasks(tasks);
+      dbg.paths.clear();
+      work_on_tasks(dbg, tasks);
       remove_finished_tasks(tasks);
     }
 
@@ -188,10 +195,24 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    draw_level(level, tex.tiles, TILE_SIZE);
-    draw_actors(occupied_tiles, TILE_SIZE, tex.actor);
-    if (sel.started) {
-      draw_selection(sel, TILE_SIZE, tex.selection);
+    if (ui.layers.tiles) {
+      draw_level(level, tex.tiles, TILE_SIZE);
+    }
+
+    if (ui.layers.actors) {
+      draw_actors(occupied_tiles, TILE_SIZE, tex.actor);
+    }
+
+    if (ui.layers.paths) {
+      for (const auto& path : dbg.paths) {
+        for (const auto& p : path) {
+          draw_texture(p.x * TILE_SIZE, p.y * TILE_SIZE, tex.path, TILE_SIZE);
+        }
+      }
+    }
+
+    if (ui.state == UI::SELECTING) {
+      draw_selection(ui.sel, TILE_SIZE, tex.selection);
     }
 
     SDL_GL_SwapBuffers();
@@ -207,6 +228,7 @@ Textures load_textures () {
   Textures tex = {
     load_texture("tex/selection.png", TILE_SIZE),
     load_texture("tex/actor.png", TILE_SIZE / 2),
+    load_texture("tex/path.png", TILE_SIZE),
     {
       load_texture("tex/floor.png", TILE_SIZE),
       load_texture("tex/wall.png", TILE_SIZE / 2),

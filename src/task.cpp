@@ -6,18 +6,22 @@
 
 GoTask::GoTask (const Level& level, Actor& actor, const Vec<int>& target)
 : _level(level), _actor(actor), _target(target) {
-
 }
 
 
-Action* GoTask::work () {
-  std::list<Point> path;
-  if (find_path(path, _level, _actor.p, _target) && path.size() > 1) {
-    path.pop_front();
-    return new MoveAction(_actor, path.front());
+Action* GoTask::work (DebugInfo& dbg) {
+  if (_path.empty()) {
+    if (find_path(_path, _level, _actor.p, _target) && _path.size() > 1) {
+      _path.pop_front();
+      dbg.paths.push_back(_path);
+    }
+    return new WaitAction(_actor);
   }
   else {
-    return new WaitAction(_actor);
+    Point next = _path.front();
+    _path.pop_front();
+    dbg.paths.push_back(_path);
+    return new MoveAction(_actor, next);
   }
 }
 
