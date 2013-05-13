@@ -1,4 +1,5 @@
 
+#include "exception.hpp"
 #include "draw.hpp"
 
 
@@ -22,9 +23,48 @@ void draw_selection (const Selection& sel, int texture_size, GLuint sel_tex) {
 }
 
 
-void draw_actors (const std::vector<Actor*>& actors, int texture_size, GLuint tex_actor) {
-  for (const Actor* actor : actors) {
-    draw_texture(texture_size * actor->p.x, texture_size * actor->p.y, tex_actor, texture_size / 2);
+void draw_actors (const std::map<Point, std::list<const Actor*>>& occupied_tiles,
+    int texture_size, GLuint tex_actor) {
+  for (const auto& kv : occupied_tiles) {
+    const Point& p = kv.first;
+    const auto& actors = kv.second;
+
+    int headcount = actors.size();
+    if (headcount > 4) {
+      //raise("Too many actors on single tile: %ld", headcount); 
+      headcount = 4;
+    }
+
+    const int tx = texture_size * p.x;
+    const int ty = texture_size * p.y;
+
+    const int s = texture_size / 2;
+
+    struct D { int x; int y; };
+
+    D d1[] = { { s/2, s/2 } };
+    D d2[] = {
+      {   0, s/2 },
+      {   s, s/2 },
+    };
+    D d3[] = {
+      { s/2, 0 },
+      {   0, s },
+      {   s, s },
+    };
+    D d4[] = {
+      { 0, 0 },
+      { s, s },
+      { 0, s },
+      { s, 0 },
+    };
+
+    const D* ds[4] = { d1, d2, d3, d4, };
+    const D* d = ds[headcount - 1];
+
+    for (int i = 0; i < headcount; ++i) {
+      draw_texture(tx + d[i].x, ty + d[i].y, tex_actor, texture_size / 2);
+    }
   }
 }
 

@@ -7,6 +7,8 @@
 #include <cassert>
 #include <vector>
 #include <algorithm>
+#include <map>
+#include <list>
 
 #define GL_GLEXT_PROTOTYPES
 extern "C" {
@@ -98,6 +100,7 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
   Selection sel;
   bool running = true;
   bool freerun = false;
+  std::map<Point, std::list<const Actor*>> occupied_tiles;
 
   while (running) {
     SDL_Event event;
@@ -165,7 +168,8 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
             });
           }
           else if (event.button.button == SDL_BUTTON_RIGHT) {
-            actors.push_back(new Actor(mouse.x, mouse.y));
+            const Point tile = (mouse / TILE_SIZE).clamped(level.w - 1, level.h - 1);
+            actors.push_back(new Actor(tile.x, tile.y));
           }
 
           break;
@@ -177,13 +181,18 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
       remove_finished_tasks(tasks);
     }
 
+    occupied_tiles.clear();
+    for (const Actor* actor : actors) {
+      occupied_tiles[actor->p].push_back(actor);
+    }
+
     glClear(GL_COLOR_BUFFER_BIT);
 
     draw_level(level, tex.tiles, TILE_SIZE);
+    draw_actors(occupied_tiles, TILE_SIZE, tex.actor);
     if (sel.started) {
       draw_selection(sel, TILE_SIZE, tex.selection);
     }
-    draw_actors(actors, TILE_SIZE, tex.actor);
 
     SDL_GL_SwapBuffers();
 
