@@ -6,6 +6,7 @@
 
 struct DebugInfo {
   std::list<std::list<Point>> paths;
+  std::list<Point> workable_tiles;
 };
 
 

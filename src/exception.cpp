@@ -25,3 +25,4 @@ const char* Exception::message () const {
   return _msg;
 }
 
+

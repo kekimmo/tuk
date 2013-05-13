@@ -37,3 +37,12 @@ bool Level::passable (int x, int y) const {
   return this->valid(x, y) && this->tile(x, y).passable;
 }
 
+
+bool Level::surrounded (int x, int y) const {
+  return
+   !this->valid(x, y) || !(passable(x - 1, y) ||
+                           passable(x + 1, y) ||
+                           passable(x, y - 1) ||
+                           passable(x, y + 1));
+}
+

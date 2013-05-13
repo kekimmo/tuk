@@ -31,6 +31,7 @@ extern "C" {
 #include "save.hpp"
 #include "ui.hpp"
 #include "path.hpp"
+#include "dig.hpp"
 
 
 const int TILE_SIZE = 32;
@@ -113,6 +114,20 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
   UI ui(level);
   DebugInfo dbg;
 
+  Dig dig;
+  dig.area.x = 9;
+  dig.area.y = 6;
+  dig.area.w = 1;
+  dig.area.h = 3;
+
+  std::list<Actor*> worker_pool;
+  for (Actor* actor : actors) {
+    worker_pool.push_back(actor);
+  }
+  
+  dig.assign(worker_pool.front());
+  worker_pool.pop_front();
+
   while (running) {
     SDL_Event event;
     bool advance = false;
@@ -189,10 +204,25 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
       }
     }
 
+    if (ui.state == UI::SELECTED) {
+      ui.sel.foreach([&level](int x, int y) {
+        level.tile(x, y).type = Tile::WALL;
+        level.tile(x, y).passable = false;
+      });
+    }
+
     if (freerun || advance) {
-      dbg.paths.clear();
-      work_on_tasks(dbg, tasks);
-      remove_finished_tasks(tasks);
+      //dbg.paths.clear();
+      //work_on_tasks(dbg, tasks);
+      //remove_finished_tasks(tasks);
+      dbg.workable_tiles.clear();
+      std::list<Action*> actions = dig.work(dbg, level);
+      fprintf(stderr, "- Actions -\n");
+      for (Action* action : actions) {
+        fprintf(stderr, "%s\n", action->str().c_str());
+        action->perform();
+        delete action;
+      }
     }
 
     occupied_tiles.clear();
@@ -208,6 +238,10 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
 
     if (ui.layers.actors) {
       draw_actors(occupied_tiles, TILE_SIZE, tex.actor);
+    }
+
+    for (const Point& p : dbg.workable_tiles) {
+      draw_texture(p.x * TILE_SIZE, p.y * TILE_SIZE, tex.remove, TILE_SIZE);
     }
 
     /* dbg.paths.clear(); */
@@ -286,13 +320,13 @@ void inner_main () {
   
   //Level* level = load_level("lev/test.lev");
   LoadState state;
-  load("007.sav", state);
+  load("008.sav", state);
 
   Level* level = state.level;
   auto& actors = state.actors;
   std::vector<Task*> tasks;
   //tasks.push_back(new DigTask(*level, *actors[0], Vec<int>(9, 6)));
-  tasks.push_back(new DigTask(*level, *actors[0], Point(9, 6)));
+  //tasks.push_back(new DigTask(*level, *actors[0], Point(9, 6)));
 
   game_main(tex, *level, actors, tasks);
 

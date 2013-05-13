@@ -5,7 +5,6 @@
 #include "task.hpp"
 
 
-
 GoTask::GoTask (const Level& level, Actor& actor, const Point& target)
 : _level(level), _actor(actor), _target(target) {
 }
