@@ -22,11 +22,11 @@ typedef std::list<Actor*> Pool;
 
 
 struct Dig {
-  size_t MAX_WORKERS = 4;
+  size_t MAX_WORKERS = 100;
 
   Pool fresh;
 
-  void assign (Actor* actor);
+  bool assign (Actor* actor);
   std::list<Action*> work (DebugInfo& dbg, Level& level);
 
   Area area;

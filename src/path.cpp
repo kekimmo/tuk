@@ -9,7 +9,7 @@ using namespace std;
 
 
 bool neighbors (list<Point>& out, const Level& level,
-    const Point& point) {
+    const Point& point, bool corners = true) {
   bool p[8];
 
   // 4 0 5
@@ -39,10 +39,13 @@ bool neighbors (list<Point>& out, const Level& level,
   p[1] = x > 0;
   p[2] = x < level.w - 1;
   p[3] = y < level.h - 1;
-  p[4] = p[0] && p[1];
-  p[5] = p[0] && p[2];
-  p[6] = p[1] && p[3];
-  p[7] = p[2] && p[3];
+
+  if (corners) {
+    p[4] = p[0] && p[1];
+    p[5] = p[0] && p[2];
+    p[6] = p[1] && p[3];
+    p[7] = p[2] && p[3];
+  }
 
   // Drop unpassable side tiles
   for (int i = 0; i < 4; ++i) { 
@@ -62,20 +65,24 @@ bool neighbors (list<Point>& out, const Level& level,
   // .#X
   // .@.
   // ...
-  p[4] = p[0] && p[1]; 
-  p[5] = p[0] && p[2]; 
-  p[6] = p[1] && p[3]; 
-  p[7] = p[2] && p[3]; 
+  if (corners) {
+    p[4] = p[0] && p[1]; 
+    p[5] = p[0] && p[2]; 
+    p[6] = p[1] && p[3]; 
+    p[7] = p[2] && p[3]; 
 
-  // Drop unpassable corner tiles
-  for (int i = 4; i < 8; ++i) {
-    p[i] = p[i] &&
-      level.passable(x + coords[i].x, y + coords[i].y);
+    // Drop unpassable corner tiles
+    for (int i = 4; i < 8; ++i) {
+      p[i] = p[i] &&
+        level.passable(x + coords[i].x, y + coords[i].y);
+    }
   }
 
   // Make the final list
   bool found = false;
-  for (int i = 0; i < 8; ++i) {
+  const int amount = corners ? 8 : 4;
+
+  for (int i = 0; i < amount; ++i) {
     if (p[i]) {
       out.push_back(Point(x + coords[i].x, y + coords[i].y));
       found = true;
@@ -86,7 +93,7 @@ bool neighbors (list<Point>& out, const Level& level,
 }
 
 
-bool find_path (list<Point>& path, const Level& level, const Point& a, const Point& b) {
+bool find_path (list<Point>& path, const Level& level, const Point& a, const Point& b, bool corners_on_first) {
   set<Point> closed;
   map<Point, Point> from;
 
@@ -105,6 +112,8 @@ bool find_path (list<Point>& path, const Level& level, const Point& a, const Poi
   g[a] = 0;
   f[a] = 0 + h(a, b);
 
+  bool first = true;
+
   list<Point> neigh;
   while (!open.empty()) {
     Point current = *open.cbegin();
@@ -121,7 +130,7 @@ bool find_path (list<Point>& path, const Level& level, const Point& a, const Poi
     closed.insert(current);
 
     neigh.clear();
-    if (neighbors(neigh, level, current)) {
+    if (neighbors(neigh, level, current, (corners_on_first || !first))) {
       for (const Point& n : neigh) {
         const int tent_g = g[current] + h(current, n);
         if (closed.count(n) && tent_g >= g[n]) {
@@ -136,6 +145,8 @@ bool find_path (list<Point>& path, const Level& level, const Point& a, const Poi
         }
       }
     }
+
+    first = false;
   }
 
   // No path

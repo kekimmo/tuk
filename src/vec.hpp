@@ -59,5 +59,8 @@ T d_squared (const Vec<T>& a, const Vec<T>& b) {
 typedef Vec<int> Point;
 
 
+bool adjacent  (const Point& a, const Point& b);
+
+
 #endif /* end of include guard: VEC_HPP_B681GLMJ */
 

@@ -6,7 +6,7 @@
 #include "vec.hpp"
 
 
-bool find_path (std::list<Point>& path, const Level& level, const Point& a, const Point& b);
+bool find_path (std::list<Point>& path, const Level& level, const Point& a, const Point& b, bool corners_on_first = true);
 
 int find_path_length (const Level& level, const Point& a, const Point& b);
 

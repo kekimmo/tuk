@@ -117,17 +117,14 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
   Dig dig;
   dig.area.x = 9;
   dig.area.y = 6;
-  dig.area.w = 1;
-  dig.area.h = 3;
+  dig.area.w = 3;
+  dig.area.h = 6;
 
   std::list<Actor*> worker_pool;
   for (Actor* actor : actors) {
     worker_pool.push_back(actor);
   }
   
-  dig.assign(worker_pool.front());
-  worker_pool.pop_front();
-
   while (running) {
     SDL_Event event;
     bool advance = false;
@@ -215,6 +212,14 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
       //dbg.paths.clear();
       //work_on_tasks(dbg, tasks);
       //remove_finished_tasks(tasks);
+      while (!worker_pool.empty()) {
+        if (dig.assign(worker_pool.front())) {
+          worker_pool.pop_front();
+        }
+        else {
+          break;
+        }
+      }
       dbg.workable_tiles.clear();
       std::list<Action*> actions = dig.work(dbg, level);
       fprintf(stderr, "- Actions -\n");

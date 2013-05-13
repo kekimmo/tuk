@@ -5,8 +5,14 @@
 #include <set>
 
 
-void Dig::assign (Actor* actor) {
-  fresh.push_back(actor);
+bool Dig::assign (Actor* actor) {
+  if (fresh.size() < MAX_WORKERS) {
+    fresh.push_back(actor);
+    return true;
+  }
+  else {
+    return false;
+  }
 }
 
 
@@ -27,20 +33,25 @@ std::list<Action*> Dig::work (DebugInfo& dbg, Level& level) {
   }
 
   std::list<Action*> actions;
+  Pool workers = fresh;
 
-  while (!fresh.empty() && !workable.empty()) {
-    auto worker = fresh.front();
+  while (!workers.empty() && !workable.empty()) {
+    auto worker = workers.front();
     auto& point = workable.front();
 
     std::list<Point> path;
-    if (find_path(path, level, point, worker->p)) {
-      if (path.size() > 1) {
+    if (find_path(path, level, point, worker->p, false)) {
+      if (path.size() > 2) {
         path.pop_back();
         actions.push_back(new MoveAction(*worker, path.back()));
       }
-    } 
+      else {
+        // In position
+        actions.push_back(new DigAction(*worker, point, level));
+      }
+    }
 
-    fresh.pop_front();
+    workers.pop_front();
     workable.pop_front(); 
   }
 
