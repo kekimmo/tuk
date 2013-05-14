@@ -32,6 +32,10 @@ struct Dig {
   std::set<Point> undug_tiles;
 
   static const int MAX_WORKERS = 100;
+
+  private:
+    static bool find_closest_worker (Pool& workers, const Level& level,
+        const Point& p, Actor** closest, std::list<Point>& shortest);
 };
 
 

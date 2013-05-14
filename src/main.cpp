@@ -242,11 +242,14 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors) 
       }
     }
 
-
     if (freerun || advance) {
+      fprintf(stderr, "- Tasks: %ld\n", tasks.size());
+
       // Last turn's dismissed workers rejoin the workforce
       // Finished tasks are deleted
       tasks.remove_if([&worker_pool](Dig* task) {
+        //fprintf(stderr, "Task %p has %ld undug tiles.\n",
+        //  task, task->undug_tiles.size());
         if (task->finished()) {
           // Dismiss all leftover workers working on the task
           task->dismiss_all(worker_pool);
@@ -283,8 +286,8 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors) 
           delete action;
         }
 
-        fprintf(stderr, "Idle: %ld, Working: %ld, Useless: %ld\n",
-            task->idle.size(), task->working.size(), task->useless.size());
+        //fprintf(stderr, "Idle: %ld, Working: %ld, Useless: %ld\n",
+        //    task->idle.size(), task->working.size(), task->useless.size());
       }
     }
 

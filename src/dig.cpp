@@ -51,7 +51,11 @@ std::list<Action*> Dig::work (DebugInfo& dbg, Level& level) {
         workable.push_back(p);
         dbg.workable_tiles.push_back(p);
       }
-      dbg.undug_tiles.push_back(p);
+      else {
+        // This tile is clearly unworkable (surrounded, there can be no
+        // route any worker could take)
+        dbg.unworkable_tiles.push_back(p);
+      }
       ++it;
     }
     else {
@@ -71,28 +75,66 @@ std::list<Action*> Dig::work (DebugInfo& dbg, Level& level) {
     idle.pop_back();
   }
 
-  // Assign idle workers to tiles until either run out
-  while (!idle.empty() && !workable.empty()) {
-    auto worker = idle.front();
-    auto& point = workable.front();
-    
-    std::list<Point> path;
-    if (find_path(path, level, point, worker->p, false)) {
-      if (path.size() > 2) {
-        path.pop_back();
-        actions.push_back(new MoveAction(*worker, path.back()));
+  // This could be (!idle.empty() && !workable.empty()), but then I couldn't
+  // get a list of all unworkable tiles
+  while (!workable.empty()) {
+    auto& target = workable.front();
+    Actor* closest;
+    std::list<Point> shortest;
+
+    if (find_closest_worker(idle, level, target, &closest, shortest)) {
+      if (shortest.size() == 2) {
+        actions.push_back(new DigAction(*closest, target, level));
       }
       else {
-        // In position
-        actions.push_back(new DigAction(*worker, point, level));
+        shortest.pop_back(); // drop the tile the worker is standing on
+        actions.push_back(new MoveAction(*closest, shortest.back()));
       }
-      working.push_back(worker);
-      idle.pop_front();
+      idle.remove(closest);
+      working.push_back(closest);
     }
+    else {
+      // This tile is currently unworkable (no worker has path to it)
+      dbg.unworkable_tiles.push_back(target);
+    }
+    
     workable.pop_front(); 
   }
+
+  // Decide that all workers not currently used are useless too
+  useless.splice(useless.begin(), idle);
   
   return actions;
+}
+
+
+// Find the worker with the shortest path to a tile adjacent to p.
+// Set closest to this worker and populate shortest with the path.
+// Return true on success false if no worker has a route.
+bool Dig::find_closest_worker (Pool& workers, const Level& level, const Point& p,
+    Actor** closest, std::list<Point>& shortest) {
+  if (workers.empty()) {
+    return false;
+  }
+
+  std::list<Point> path;
+
+  bool found_one = false;
+  for (Actor* worker : workers) {
+    if (find_path(path, level, p, worker->p, false) &&
+        (!found_one || path.size() < shortest.size())) {
+      *closest = worker;
+      swap(shortest, path);
+      path.clear();
+      found_one = true;
+      if (path.size() <= 2) {
+        // There can be no shorter path
+        break;
+      }
+    }
+  }
+
+  return found_one;
 }
 
 
