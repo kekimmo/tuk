@@ -24,7 +24,6 @@ extern "C" {
 #include "selection.hpp"
 #include "texture.hpp"
 #include "level.hpp"
-#include "draw.hpp"
 #include "actor.hpp"
 #include "save.hpp"
 #include "ui.hpp"
@@ -86,14 +85,13 @@ void save_state (const Level& level, const std::vector<Actor*>& actors) {
 }
 
 
-void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors) {
+void game_main (UI& ui, const Textures& tex, Level& level, std::vector<Actor*>& actors) {
   Vec<int> mouse(0, 0);
 
   bool running = true;
   bool freerun = false;
   std::map<Point, std::list<const Actor*>> occupied_tiles;
 
-  UI ui(level);
   DebugInfo dbg;
 
   struct {
@@ -115,7 +113,13 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors) 
   for (Actor* actor : actors) {
     worker_pool.push_back(actor);
   }
+
+  SDL_WarpMouse(ui.view.w / 2, ui.view.h / 2);
+  ui.mouse.x = ui.view.w / 2;
+  ui.mouse.y = ui.view.h / 2;
   
+  Uint32 ticks = SDL_GetTicks();
+
   while (running) {
     SDL_Event event;
     bool advance = false;
@@ -161,6 +165,14 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors) 
               break;
             case SDLK_3:
               toggle(ui.layers.paths);
+              break;
+
+            case SDLK_LEFT:
+              ui.view.x -= 10;
+              break;
+
+            case SDLK_RIGHT:
+              ui.view.x += 10;
               break;
 
             case SDLK_q:
@@ -225,8 +237,12 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors) 
       }
     }
 
-    if (freerun || advance) {
-      fprintf(stderr, "- Tasks: %ld\n", tasks.size());
+    ui.update();
+
+    Uint32 ticks_now = SDL_GetTicks();
+    if (advance || (freerun && ticks_now - ticks > 100)) {
+      //fprintf(stderr, "- Tasks: %ld\n", tasks.size());
+      ticks = ticks_now;
 
       // Finished tasks are deleted
       tasks.remove_if([](Dig* task) {
@@ -251,9 +267,9 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors) 
       for (Dig* task : tasks) {
         // Actual work is done
         std::list<Action*> actions = task->work(dbg, level, idle, working);
-        fprintf(stderr, "- Actions -\n");
+        //fprintf(stderr, "- Actions -\n");
         for (Action* action : actions) {
-          fprintf(stderr, "%s\n", action->str().c_str());
+          //fprintf(stderr, "%s\n", action->str().c_str());
           action->perform();
           delete action;
         }
@@ -271,29 +287,29 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors) 
     glClear(GL_COLOR_BUFFER_BIT);
     
     if (ui.layers.tiles) {
-      draw_level(level, tex, TILE_SIZE);
+      ui.draw_level(level, tex, TILE_SIZE);
     }
 
     if (ui.layers.actors) {
-      draw_actors(occupied_tiles, TILE_SIZE, tex.actor);
+      ui.draw_actors(occupied_tiles, TILE_SIZE, tex.actor);
     }
 
     for (const Point& p : dbg.undug_tiles) {
-      draw_texture(p * TILE_SIZE, tex.undug, TILE_SIZE);
+      ui.draw_texture(p * TILE_SIZE, tex.undug, TILE_SIZE);
     }
 
     for (const Point& p : dbg.workable_tiles) {
-      draw_texture(p * TILE_SIZE, tex.remove, TILE_SIZE);
+      ui.draw_texture(p * TILE_SIZE, tex.remove, TILE_SIZE);
     }
 
     for (const Point& p : dbg.unworkable_tiles) {
-      draw_texture(p * TILE_SIZE, tex.remove_inaccessible, TILE_SIZE);
+      ui.draw_texture(p * TILE_SIZE, tex.remove_inaccessible, TILE_SIZE);
     }
 
     if (ui.layers.paths) {
       for (const auto& path : dbg.paths) {
         for (const auto& p : path) {
-          draw_texture(p.x * TILE_SIZE, p.y * TILE_SIZE, tex.path, TILE_SIZE);
+          ui.draw_texture(p.x * TILE_SIZE, p.y * TILE_SIZE, tex.path, TILE_SIZE);
         }
       }
     }
@@ -304,22 +320,34 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors) 
 
     const Point& mouse_tile = ui.mouse_tile();
     if (draw_brush) {
-      draw_texture(mouse_tile * TILE_SIZE, brush_texture, TILE_SIZE);
+      ui.draw_texture(mouse_tile * TILE_SIZE, brush_texture, TILE_SIZE);
     }
-    draw_texture(mouse_tile * TILE_SIZE, tex.selection, TILE_SIZE);
+    ui.draw_texture(mouse_tile * TILE_SIZE, tex.selection, TILE_SIZE);
 
     if (ui.state == UI::SELECTING || ui.state == UI::SELECTED) {
       if (draw_brush) {
-        draw_selection(ui.sel, TILE_SIZE, brush_texture);
+        ui.draw_selection(ui.sel, TILE_SIZE, brush_texture);
       }
-      draw_selection(ui.sel, TILE_SIZE, tex.selection);
+      ui.draw_selection(ui.sel, TILE_SIZE, tex.selection);
     }
+
+
+    glDisable(GL_TEXTURE_2D);
+    glLoadIdentity();
+    glColor3i(255, 40, 0);
+    glBegin(GL_QUADS);
+    glVertex2d(800, 600);
+    glVertex2d(800, 0);
+    glVertex2d(600, 0);
+    glVertex2d(600, 600);
+    glEnd();
+    glEnable(GL_TEXTURE_2D);
 
     SDL_GL_SwapBuffers();
 
-    if (freerun) {
-      SDL_Delay(100);
-    }
+    /*if (freerun) {
+      SDL_Delay(50);
+    }*/
   }
 }
 
@@ -375,12 +403,16 @@ void inner_main () {
   Textures tex = load_textures();
   
   LoadState state;
-  load("010.sav", state);
+  load("011.sav", state);
+
+  //SDL_WM_GrabInput(SDL_GRAB_ON);
 
   Level* level = state.level;
   auto& actors = state.actors;
 
-  game_main(tex, *level, actors);
+  UI ui(win_w, win_h, *level);
+
+  game_main(ui, tex, *level, actors);
 
   for (Actor* actor : actors) {
     delete actor;

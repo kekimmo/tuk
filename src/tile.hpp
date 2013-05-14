@@ -11,7 +11,7 @@ struct Tile {
   };
   static constexpr const char* TYPECHARS = " #";
 
-  Type type = FLOOR;
+  Type type = WALL;
   int hp = 0;
 };
 
