@@ -5,7 +5,6 @@ add_executable(main
   texture.cpp
   level.cpp
   tile.cpp
-  load_level.cpp
   draw.cpp
   selection.cpp
   actor.cpp

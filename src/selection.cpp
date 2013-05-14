@@ -2,14 +2,14 @@
 #include "selection.hpp"
 
 
-void Selection::start (const Vec<int>& p) {
+void Selection::start (const Point& p) {
   from = p;
   to = p;
   started = true;
   finished = false;
 }
 
-void Selection::update (const Vec<int>& p) {
+void Selection::update (const Point& p) {
   to = p;
 }
 
@@ -46,4 +46,35 @@ void Selection::foreach (std::function<void (int, int)> callback) const {
     }
   }
 }
+
+
+int min (int a, int b) {
+  return a < b ? a : b;
+}
+
+
+int abs (int a) {
+  return a < 0 ? -a : a;
+}
+
+  
+Area Selection::area () const {
+  const int x = min(from.x, to.x);
+  const int y = min(from.y, to.y);
+
+  const int w = abs(from.x - to.x) + 1;
+  const int h = abs(from.y - to.y) + 1;
+
+  return Area { x, y, w, h }; 
+}
+
+
+std::set<Point> Selection::points () const {
+  std::set<Point> ps;
+  this->foreach([&ps](int x, int y) {
+    ps.insert(Point(x, y));
+  });
+  return ps;
+}
+
 

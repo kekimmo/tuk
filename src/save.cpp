@@ -36,7 +36,7 @@ void save_level (FILE* file, const Level& level) {
 
 
 void save_tile (FILE* file, const Tile& tile) {
-  fprintf(file, "[%d %c]", tile.type, tile.passable ? '.' : '#');
+  fprintf(file, "[%c]", tile.type);
 }
 
 
@@ -107,18 +107,20 @@ Level* load_level (FILE* file) {
 
   for (int y = 0; y < level->h; ++y) {
     for (int x = 0; x < level->w; ++x) {
-      int type;
-      char passable;
-      int matches = fscanf(file, "[%d %c]", &type, &passable);
-      if (matches != 2) {
-        raise("Invalid tile format (%d)", matches);
+      char type;
+      int ret = fscanf(file, "[%c]", &type);
+      if (ret == EOF) {
+        raise("Failed to read save file: %s",
+            ferror(file) ? strerror(errno): "premature EOF");
       }
-      else if (passable != '#' && passable != '.') {
-        raise("Invalid tile data: [%d %c]", type, passable);
+      else if (ret == 0) {
+        raise(fmt, "could not read character");
+      }
+      else if (!strchr(Tile::TYPECHARS, type)) {
+        raise("Invalid tile type: [%c]", type);
       }
       Tile& tile = level->tile(x, y);
       tile.type = (Tile::Type)type;
-      tile.passable = (passable == '.');
     }
     if (fgetc(file) != '\n') {
       raise(fmt, "row");

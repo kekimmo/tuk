@@ -24,7 +24,6 @@ extern "C" {
 #include "selection.hpp"
 #include "texture.hpp"
 #include "level.hpp"
-#include "load_level.hpp"
 #include "draw.hpp"
 #include "actor.hpp"
 #include "task.hpp"
@@ -39,6 +38,15 @@ const int TILE_SIZE = 32;
 
 void toggle (bool& var) {
   var = !var;
+}
+
+
+template<typename T> void roll_inc (const T limit, T& value) {
+  value = (value < limit) ? (value + 1) : 0;
+}
+
+template<typename T> void roll_dec (const T limit, T& value) {
+  value = (value == 0) ? limit : (value - 1);
 }
 
 
@@ -79,15 +87,6 @@ void save_state (const Level& level, const std::vector<Actor*>& actors) {
 }
 
 
-struct Textures {
-  GLuint selection;
-  GLuint actor;
-  GLuint path;
-  GLuint remove;
-  GLuint tiles[9];
-};
-
-
 void work_on_tasks (DebugInfo& dbg, const std::vector<Task*>& tasks) {
   for (Task* task : tasks) {
     const Action* action = task->work(dbg);
@@ -104,7 +103,7 @@ void remove_finished_tasks (std::vector<Task*>& tasks) {
 }
 
 
-void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, std::vector<Task*> tasks) {
+void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors) {
   Vec<int> mouse(0, 0);
 
   bool running = true;
@@ -114,11 +113,20 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
   UI ui(level);
   DebugInfo dbg;
 
-  Dig dig;
-  dig.area.x = 9;
-  dig.area.y = 6;
-  dig.area.w = 3;
-  dig.area.h = 6;
+  struct {
+    bool active = false;
+    enum {
+      TILE,
+      ACTOR,
+    } brush_type = TILE;
+    std::vector<Tile::Type> brush_tiles = {
+      Tile::FLOOR,
+      Tile::WALL,
+    };
+    long unsigned int brush_tile_selected = 0;
+  } editor;
+
+  std::list<Dig*> tasks;
 
   std::list<Actor*> worker_pool;
   for (Actor* actor : actors) {
@@ -130,7 +138,7 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
     bool advance = false;
 
     while (SDL_PollEvent(&event)) {
-      Point mouse_tile = ui.mouse_tile();
+      Point tmp;
       switch (event.type) {
         case SDL_QUIT:
           running = false;
@@ -157,7 +165,6 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
               for (int y = 0; y < level.h; ++y) {
                 for (int x = 0; x < level.w; ++x) {
                   level.tile(x, y).type = Tile::WALL;
-                  level.tile(x, y).passable = false;
                 }
               }
               break;
@@ -174,11 +181,45 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
               break;
 
             case SDLK_q:
-              fprintf(stderr, "(%d, %d)\n", mouse_tile.x, mouse_tile.y);
+              tmp = ui.mouse_tile();
+              fprintf(stderr, "(%d, %d)\n", tmp.x, tmp.y);
+              break;
+
+            case SDLK_F1:
+              toggle(editor.active);
+              break;
+
+            case SDLK_w:
+              if (editor.active) {
+                roll_dec(editor.brush_tiles.size() - 1, editor.brush_tile_selected);
+              }
+              break;
+
+            case SDLK_e:
+              if (editor.active) {
+                roll_inc(editor.brush_tiles.size() - 1, editor.brush_tile_selected);
+              }
               break;
 
             case SDLK_SPACE:
               advance = true;
+              break;
+
+            case SDLK_d:
+              if (editor.active) {
+                if (ui.state == UI::SELECTED) {
+                  if (editor.brush_type == editor.TILE) {
+                    ui.sel.foreach([&level,&editor](int x, int y) {
+                      level.tile(x, y).type =
+                        editor.brush_tiles[editor.brush_tile_selected];
+                    });
+                  }
+                  ui.state = UI::IDLE;
+                }
+              }
+              else {
+                tasks.push_back(new Dig(ui.sel.points()));
+              }
               break;
 
             default:
@@ -201,32 +242,49 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
       }
     }
 
-    if (ui.state == UI::SELECTED) {
-      ui.sel.foreach([&level](int x, int y) {
-        level.tile(x, y).type = Tile::WALL;
-        level.tile(x, y).passable = false;
-      });
-    }
 
     if (freerun || advance) {
-      //dbg.paths.clear();
-      //work_on_tasks(dbg, tasks);
-      //remove_finished_tasks(tasks);
-      while (!worker_pool.empty()) {
-        if (dig.assign(worker_pool.front())) {
-          worker_pool.pop_front();
+      // Last turn's dismissed workers rejoin the workforce
+      // Finished tasks are deleted
+      tasks.remove_if([&worker_pool](Dig* task) {
+        if (task->finished()) {
+          // Dismiss all leftover workers working on the task
+          task->dismiss_all(worker_pool);
+          delete task;
+          return true;
         }
         else {
-          break;
+          // Take all dismissed workers
+          task->dismiss(worker_pool);
+          return false;
         }
-      }
+      });
+
       dbg.workable_tiles.clear();
-      std::list<Action*> actions = dig.work(dbg, level);
-      fprintf(stderr, "- Actions -\n");
-      for (Action* action : actions) {
-        fprintf(stderr, "%s\n", action->str().c_str());
-        action->perform();
-        delete action;
+      dbg.undug_tiles.clear();
+
+      for (Dig* task : tasks) {
+        // New workers start working on the task if it needs more
+        while (!worker_pool.empty()) {
+          if (task->assign(worker_pool.front())) {
+            worker_pool.pop_front();
+          }
+          else {
+            break;
+          }
+        }
+        
+        // Actual work is done
+        std::list<Action*> actions = task->work(dbg, level);
+        fprintf(stderr, "- Actions -\n");
+        for (Action* action : actions) {
+          fprintf(stderr, "%s\n", action->str().c_str());
+          action->perform();
+          delete action;
+        }
+
+        fprintf(stderr, "Idle: %ld, Working: %ld, Useless: %ld\n",
+            task->idle.size(), task->working.size(), task->useless.size());
       }
     }
 
@@ -236,24 +294,22 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
     }
 
     glClear(GL_COLOR_BUFFER_BIT);
-
+    
     if (ui.layers.tiles) {
-      draw_level(level, tex.tiles, TILE_SIZE);
+      draw_level(level, tex, TILE_SIZE);
     }
 
     if (ui.layers.actors) {
       draw_actors(occupied_tiles, TILE_SIZE, tex.actor);
     }
 
-    for (const Point& p : dbg.workable_tiles) {
-      draw_texture(p.x * TILE_SIZE, p.y * TILE_SIZE, tex.remove, TILE_SIZE);
+    for (const Point& p : dbg.undug_tiles) {
+      draw_texture(p * TILE_SIZE, tex.undug, TILE_SIZE);
     }
 
-    /* dbg.paths.clear(); */
-    /* std::list<Point> path; */
-    /* if (find_path(path, level, actors[0]->p, ui.mouse_tile())) { */
-    /*   dbg.paths.push_back(path); */
-    /* } */
+    for (const Point& p : dbg.workable_tiles) {
+      draw_texture(p * TILE_SIZE, tex.remove, TILE_SIZE);
+    }
 
     if (ui.layers.paths) {
       for (const auto& path : dbg.paths) {
@@ -263,7 +319,20 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
       }
     }
 
-    if (ui.state == UI::SELECTING) {
+    GLuint brush_texture = cursor_texture(tex,
+        editor.brush_tiles[editor.brush_tile_selected]);
+    const bool draw_brush = editor.active && editor.brush_type == editor.TILE;
+
+    const Point& mouse_tile = ui.mouse_tile();
+    if (draw_brush) {
+      draw_texture(mouse_tile * TILE_SIZE, brush_texture, TILE_SIZE);
+    }
+    draw_texture(mouse_tile * TILE_SIZE, tex.selection, TILE_SIZE);
+
+    if (ui.state == UI::SELECTING || ui.state == UI::SELECTED) {
+      if (draw_brush) {
+        draw_selection(ui.sel, TILE_SIZE, brush_texture);
+      }
       draw_selection(ui.sel, TILE_SIZE, tex.selection);
     }
 
@@ -279,11 +348,13 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors, 
 Textures load_textures () {
   Textures tex = {
     load_texture("tex/selection.png", TILE_SIZE),
+    load_texture("tex/remove.png", TILE_SIZE),
+    load_texture("tex/undug.png", TILE_SIZE),
     load_texture("tex/actor.png", TILE_SIZE / 2),
     load_texture("tex/path.png", TILE_SIZE),
-    load_texture("tex/remove.png", TILE_SIZE),
+    load_texture("tex/floor.png", TILE_SIZE),
+    load_texture("tex/wall-full.png", TILE_SIZE),
     {
-      load_texture("tex/floor.png", TILE_SIZE),
       load_texture("tex/wall.png", TILE_SIZE / 2),
       load_texture("tex/wall-L.png", TILE_SIZE / 2),
       load_texture("tex/wall-C.png", TILE_SIZE / 2),
@@ -323,22 +394,13 @@ void inner_main () {
 
   Textures tex = load_textures();
   
-  //Level* level = load_level("lev/test.lev");
   LoadState state;
   load("008.sav", state);
 
   Level* level = state.level;
   auto& actors = state.actors;
-  std::vector<Task*> tasks;
-  //tasks.push_back(new DigTask(*level, *actors[0], Vec<int>(9, 6)));
-  //tasks.push_back(new DigTask(*level, *actors[0], Point(9, 6)));
 
-  game_main(tex, *level, actors, tasks);
-
-  for (Task* task : tasks) {
-    delete task;
-  }
-  tasks.clear();
+  game_main(tex, *level, actors);
 
   for (Actor* actor : actors) {
     delete actor;

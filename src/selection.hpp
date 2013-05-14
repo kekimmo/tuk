@@ -2,19 +2,24 @@
 #define SELECTION_HPP_FOBRQLRG
 
 #include <functional>
+#include <set>
 #include "vec.hpp"
+#include "area.hpp"
 
 
 struct Selection {
-  Vec<int> from = Vec<int>(0, 0);
-  Vec<int> to = Vec<int>(0, 0);
+  Point from = Point(0, 0);
+  Point to = Point(0, 0);
   bool started = false;
   bool finished = false;
 
-  void start (const Vec<int>& p);
-  void update (const Vec<int>& p);
+  void start (const Point& p);
+  void update (const Point& p);
   void finish ();
   void foreach (std::function<void (int, int)> callback) const;
+
+  Area area () const;
+  std::set<Point> points () const;
 };
 
 

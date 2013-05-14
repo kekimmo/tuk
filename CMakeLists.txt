@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.6)
 
 project(Tuk)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall")
+set(CMAKE_CXX_FLAGS "-std=c++11 -g -Wall -Werror")
 
 find_package(SDL)
 find_package(OpenGL)

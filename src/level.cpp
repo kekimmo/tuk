@@ -34,7 +34,7 @@ Tile& Level::tile (int x, int y) const {
 
 
 bool Level::passable (int x, int y) const {
-  return this->valid(x, y) && this->tile(x, y).passable;
+  return this->valid(x, y) && this->tile(x, y).type == Tile::FLOOR;
 }
 
 

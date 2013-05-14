@@ -6,11 +6,11 @@
 const int TILE_SIZE = 32;
 
 
-void draw_level (const Level& level, const GLuint tile_textures[], int texture_size)
+void draw_level (const Level& level, const Textures& tex, int texture_size)
 {
   for (int y = 0; y < level.h; ++y) {
     for (int x = 0; x < level.w; ++x) {
-      draw_tile(level, x, y, tile_textures, texture_size);
+      draw_tile(level, x, y, tex, texture_size);
     }
   }
 }
@@ -69,12 +69,12 @@ void draw_actors (const std::map<Point, std::list<const Actor*>>& occupied_tiles
 }
 
 
-void draw_tile (const Level& level, int x, int y, const GLuint tile_textures[], int texture_size) {
+void draw_tile (const Level& level, int x, int y, const Textures& tex, int texture_size) {
   const Tile& tile = level.tile(x, y);
 
-  draw_texture(texture_size * x, texture_size * y, tile_textures[0], texture_size);
+  // Draw floor underneath anyway
+  draw_texture(texture_size * x, texture_size * y, tex.floor, texture_size);
 
-  GLuint tex = tile_textures[tile.type - 1];
   if (tile.type == Tile::WALL) {
     auto w = [&level](int x, int y) {
       return level.valid(x, y) && level.tile(x, y).type == Tile::WALL;
@@ -123,9 +123,14 @@ void draw_tile (const Level& level, int x, int y, const GLuint tile_textures[], 
       const int tx = x * texture_size + where[i].dx * texture_size / 2;
       const int ty = y * texture_size + where[i].dy * texture_size / 2;
 
-      draw_texture(tx, ty, tex + p, texture_size / 2, false, i * 90);
+      draw_texture(tx, ty, tex.wall_parts[p], texture_size / 2, false, i * 90);
     }
   }
+}
+
+
+void draw_texture (const Point& p, GLuint texture, int texture_size) {
+  draw_texture(p.x, p.y, texture, texture_size);
 }
 
 

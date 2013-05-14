@@ -1,19 +1,17 @@
 #ifndef TILE_HPP_1BK7VGXJ
 #define TILE_HPP_1BK7VGXJ
 
-#include "texture.hpp"
-
 
 struct Tile {
   Tile ();
 
   enum Type {
-    UNKNOWN,
-    FLOOR,
-    WALL,
+    UNKNOWN = '?',
+    FLOOR = ' ',
+    WALL = '#',
   };
+  static constexpr const char* TYPECHARS = "? #";
 
-  bool passable = false;
   Type type = UNKNOWN;
 };
 

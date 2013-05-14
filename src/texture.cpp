@@ -7,6 +7,20 @@ extern "C" {
 }
 
 
+GLuint cursor_texture (const Textures& tex, const Tile::Type type) {
+  switch (type) {
+    case Tile::FLOOR:
+      return tex.floor;
+
+    case Tile::WALL:
+      return tex.wall_full;
+
+    default:
+      return NULL_TEXTURE;
+  }
+}
+
+
 GLuint load_texture (const char* filename, const int texture_size) {
   FILE* file = fopen(filename, "rb");
   if (file == NULL) {
