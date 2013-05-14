@@ -14,6 +14,7 @@ const int NULL_TEXTURE = 0;
 struct Textures {
   GLuint selection;
   GLuint remove;
+  GLuint remove_inaccessible;
   GLuint undug;
   GLuint actor;
   GLuint path;

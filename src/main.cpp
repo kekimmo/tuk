@@ -245,40 +245,29 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors) 
     if (freerun || advance) {
       fprintf(stderr, "- Tasks: %ld\n", tasks.size());
 
-      // Last turn's dismissed workers rejoin the workforce
       // Finished tasks are deleted
-      tasks.remove_if([&worker_pool](Dig* task) {
+      tasks.remove_if([](Dig* task) {
         //fprintf(stderr, "Task %p has %ld undug tiles.\n",
         //  task, task->undug_tiles.size());
         if (task->finished()) {
-          // Dismiss all leftover workers working on the task
-          task->dismiss_all(worker_pool);
           delete task;
           return true;
         }
         else {
-          // Take all dismissed workers
-          task->dismiss(worker_pool);
           return false;
         }
       });
 
-      dbg.workable_tiles.clear();
       dbg.undug_tiles.clear();
+      dbg.workable_tiles.clear();
+      dbg.unworkable_tiles.clear();
+
+      Pool idle = worker_pool;
+      Pool working;
 
       for (Dig* task : tasks) {
-        // New workers start working on the task if it needs more
-        while (!worker_pool.empty()) {
-          if (task->assign(worker_pool.front())) {
-            worker_pool.pop_front();
-          }
-          else {
-            break;
-          }
-        }
-        
         // Actual work is done
-        std::list<Action*> actions = task->work(dbg, level);
+        std::list<Action*> actions = task->work(dbg, level, idle, working);
         fprintf(stderr, "- Actions -\n");
         for (Action* action : actions) {
           fprintf(stderr, "%s\n", action->str().c_str());
@@ -312,6 +301,10 @@ void game_main (const Textures& tex, Level& level, std::vector<Actor*>& actors) 
 
     for (const Point& p : dbg.workable_tiles) {
       draw_texture(p * TILE_SIZE, tex.remove, TILE_SIZE);
+    }
+
+    for (const Point& p : dbg.unworkable_tiles) {
+      draw_texture(p * TILE_SIZE, tex.remove_inaccessible, TILE_SIZE);
     }
 
     if (ui.layers.paths) {
@@ -352,6 +345,7 @@ Textures load_textures () {
   Textures tex = {
     load_texture("tex/selection.png", TILE_SIZE),
     load_texture("tex/remove.png", TILE_SIZE),
+    load_texture("tex/remove-inaccessible.png", TILE_SIZE),
     load_texture("tex/undug.png", TILE_SIZE),
     load_texture("tex/actor.png", TILE_SIZE / 2),
     load_texture("tex/path.png", TILE_SIZE),
