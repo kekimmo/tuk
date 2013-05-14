@@ -9,7 +9,6 @@ add_executable(main
   selection.cpp
   actor.cpp
   save.cpp
-  task.cpp
   path.cpp
   action.cpp
   ui.cpp

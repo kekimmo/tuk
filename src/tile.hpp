@@ -6,13 +6,13 @@ struct Tile {
   Tile ();
 
   enum Type {
-    UNKNOWN = '?',
     FLOOR = ' ',
     WALL = '#',
   };
-  static constexpr const char* TYPECHARS = "? #";
+  static constexpr const char* TYPECHARS = " #";
 
-  Type type = UNKNOWN;
+  Type type = FLOOR;
+  int hp = 0;
 };
 
 

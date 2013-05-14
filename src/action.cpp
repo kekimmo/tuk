@@ -35,7 +35,13 @@ DigAction::DigAction (Actor& actor, const Point& target, Level& level)
 }
 
 void DigAction::perform () const {
-  level.tile(target.x, target.y).type = Tile::FLOOR;
+  Tile& tile = level.tile(target.x, target.y);
+  if (tile.hp > 0) {
+    tile.hp -= 1;
+  }
+  if (tile.hp == 0) {
+    tile.type = Tile::FLOOR;
+  }
 }
 
 std::string DigAction::str () const {

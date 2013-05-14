@@ -38,6 +38,11 @@ bool Level::passable (int x, int y) const {
 }
 
 
+bool Level::diggable (const Point& p) const {
+  return this->valid(p.x, p.y) && this->tile(p.x, p.y).hp > 0;
+}
+
+
 bool Level::surrounded (int x, int y) const {
   return
    !this->valid(x, y) || !(passable(x - 1, y) ||

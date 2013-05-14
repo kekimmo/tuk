@@ -36,7 +36,7 @@ void save_level (FILE* file, const Level& level) {
 
 
 void save_tile (FILE* file, const Tile& tile) {
-  fprintf(file, "[%c]", tile.type);
+  fprintf(file, "[%c %03d]", tile.type, tile.hp);
 }
 
 
@@ -108,19 +108,22 @@ Level* load_level (FILE* file) {
   for (int y = 0; y < level->h; ++y) {
     for (int x = 0; x < level->w; ++x) {
       char type;
-      int ret = fscanf(file, "[%c]", &type);
+      int hp;
+
+      int ret = fscanf(file, "[%c %03d]", &type, &hp);
       if (ret == EOF) {
         raise("Failed to read save file: %s",
             ferror(file) ? strerror(errno): "premature EOF");
       }
-      else if (ret == 0) {
-        raise(fmt, "could not read character");
+      else if (ret != 2) {
+        raise(fmt, "could not read data");
       }
       else if (!strchr(Tile::TYPECHARS, type)) {
         raise("Invalid tile type: [%c]", type);
       }
       Tile& tile = level->tile(x, y);
       tile.type = (Tile::Type)type;
+      tile.hp = hp;
     }
     if (fgetc(file) != '\n') {
       raise(fmt, "row");

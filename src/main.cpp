@@ -26,7 +26,6 @@ extern "C" {
 #include "level.hpp"
 #include "draw.hpp"
 #include "actor.hpp"
-#include "task.hpp"
 #include "save.hpp"
 #include "ui.hpp"
 #include "path.hpp"
@@ -84,22 +83,6 @@ void save_state (const Level& level, const std::vector<Actor*>& actors) {
   fclose(file); // this also closes fd
 
   printf("Saved: %s\n", name);
-}
-
-
-void work_on_tasks (DebugInfo& dbg, const std::vector<Task*>& tasks) {
-  for (Task* task : tasks) {
-    const Action* action = task->work(dbg);
-    action->perform();
-    delete action;
-  }
-}
-
-
-void remove_finished_tasks (std::vector<Task*>& tasks) {
-  std::remove_if(tasks.begin(), tasks.end(), [](const Task* task) {
-    return task->ready(); 
-  });
 }
 
 
@@ -392,7 +375,7 @@ void inner_main () {
   Textures tex = load_textures();
   
   LoadState state;
-  load("008.sav", state);
+  load("010.sav", state);
 
   Level* level = state.level;
   auto& actors = state.actors;

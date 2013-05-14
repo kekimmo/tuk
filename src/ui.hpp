@@ -20,6 +20,9 @@ struct UI {
   Point mouse;
   Selection sel;
 
+  Point port = { 800, 600 };
+  Area view = { 0, 0, 20, 18 };
+
   struct {
     bool tiles = true;
     bool actors = true;

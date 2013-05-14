@@ -2,6 +2,7 @@
 #define LEVEL_HPP_BRKLIAXL
 
 #include "tile.hpp"
+#include "vec.hpp"
 
 
 class Level
@@ -13,6 +14,7 @@ public:
   bool valid (int x, int y) const;
   Tile& tile (int x, int y) const;
   bool passable (int x, int y) const;
+  bool diggable (const Point& p) const;
   bool surrounded (int x, int y) const;
 
   const int w;
