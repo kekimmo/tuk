@@ -421,7 +421,7 @@ void inner_main () {
   Textures tex = load_textures();
   
   LoadState state;
-  load("013.sav", state);
+  load("011.sav", state);
 
   //SDL_WM_GrabInput(SDL_GRAB_ON);
 
