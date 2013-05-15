@@ -49,7 +49,8 @@ template<typename T> void roll_dec (const T limit, T& value) {
 
 
 void save_state (const Level& level, const std::vector<Actor*>& actors) {
-  char name[8];
+  const int MAXLEN = 128;
+  char name[MAXLEN];
 
   int num = 0;
   int fd = -1;
@@ -58,7 +59,7 @@ void save_state (const Level& level, const std::vector<Actor*>& actors) {
     if (num > 999) {
       raise("More than %d save files!", 999);
     }
-    snprintf(name, 8, "%03d.sav", num);
+    snprintf(name, MAXLEN, "sav/%03d.sav", num);
     num += 1;
     fd = open(name, O_CREAT | O_EXCL | O_WRONLY, 0644);
     if (fd == -1 && errno != EEXIST) {
@@ -421,7 +422,7 @@ void inner_main () {
   Textures tex = load_textures();
   
   LoadState state;
-  load("011.sav", state);
+  load("sav/011.sav", state);
 
   //SDL_WM_GrabInput(SDL_GRAB_ON);
 
