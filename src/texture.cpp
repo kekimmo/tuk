@@ -1,4 +1,6 @@
 
+#include <cerrno>
+#include <cstring>
 #include "texture.hpp"
 #include "exception.hpp"
 
