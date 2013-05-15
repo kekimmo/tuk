@@ -49,6 +49,7 @@ struct UI {
   void mouse_up ();
 
   void update ();
+  void scroll_view (int dx, int dy);
 
   // Get the tile the mouse is on
   Point mouse_tile () const;

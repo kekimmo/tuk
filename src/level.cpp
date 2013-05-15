@@ -43,11 +43,11 @@ bool Level::diggable (const Point& p) const {
 }
 
 
-bool Level::surrounded (int x, int y) const {
+bool Level::surrounded (const Point& p) const {
   return
-   !this->valid(x, y) || !(passable(x - 1, y) ||
-                           passable(x + 1, y) ||
-                           passable(x, y - 1) ||
-                           passable(x, y + 1));
+   !this->valid(p.x, p.y) || !(passable(p.x - 1, p.y) ||
+                               passable(p.x + 1, p.y) ||
+                               passable(p.x, p.y - 1) ||
+                               passable(p.x, p.y + 1));
 }
 

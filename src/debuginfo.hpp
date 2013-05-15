@@ -8,7 +8,6 @@ struct DebugInfo {
   std::list<std::list<Point>> paths;
   std::list<Point> workable_tiles;
   std::list<Point> unworkable_tiles;
-  std::list<Point> undug_tiles;
 };
 
 

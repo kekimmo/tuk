@@ -168,11 +168,19 @@ void game_main (UI& ui, const Textures& tex, Level& level, std::vector<Actor*>& 
               break;
 
             case SDLK_LEFT:
-              ui.view.x -= 10;
+              ui.scroll_view(-128, 0);
               break;
 
             case SDLK_RIGHT:
-              ui.view.x += 10;
+              ui.scroll_view(128, 0);
+              break;
+
+            case SDLK_UP:
+              ui.scroll_view(0, -128);
+              break;
+
+            case SDLK_DOWN:
+              ui.scroll_view(0, 128);
               break;
 
             case SDLK_q:
@@ -213,13 +221,22 @@ void game_main (UI& ui, const Textures& tex, Level& level, std::vector<Actor*>& 
                 }
               }
               else {
-                tasks.push_back(new Dig(ui.sel.points()));
+                // Get all diggable tiles
+                std::set<Point> tiles;
+                ui.sel.foreach([&level,&tiles](const Point& p) {
+                  if (level.diggable(p)) {
+                    tiles.insert(p);
+                  }
+                });
+                // Order them to be dug
+                tasks.push_back(new Dig(tiles));
               }
               break;
 
             default:
               break;
           }
+          break;
 
         case SDL_MOUSEMOTION:
           ui.mouse_move(event.motion.x, event.motion.y);
@@ -257,7 +274,6 @@ void game_main (UI& ui, const Textures& tex, Level& level, std::vector<Actor*>& 
         }
       });
 
-      dbg.undug_tiles.clear();
       dbg.workable_tiles.clear();
       dbg.unworkable_tiles.clear();
 
@@ -294,8 +310,10 @@ void game_main (UI& ui, const Textures& tex, Level& level, std::vector<Actor*>& 
       ui.draw_actors(occupied_tiles, TILE_SIZE, tex.actor);
     }
 
-    for (const Point& p : dbg.undug_tiles) {
-      ui.draw_texture(p * TILE_SIZE, tex.undug, TILE_SIZE);
+    for (const Dig* task : tasks) {
+      for (const Point& p : task->undug_tiles) {
+        ui.draw_texture(p * TILE_SIZE, tex.undug, TILE_SIZE);
+      }
     }
 
     for (const Point& p : dbg.workable_tiles) {
@@ -403,7 +421,7 @@ void inner_main () {
   Textures tex = load_textures();
   
   LoadState state;
-  load("011.sav", state);
+  load("013.sav", state);
 
   //SDL_WM_GrabInput(SDL_GRAB_ON);
 

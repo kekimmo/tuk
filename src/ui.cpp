@@ -60,20 +60,32 @@ void UI::mouse_up () {
 
 void UI::update () {
   const int d = 10; 
+  int dx = 0;
+  int dy = 0;
 
   if (mouse.x < SCROLL_AREA) {
-    view.x -= d;
+    dx -= d;
   }
   if (mouse.x > view.w - SCROLL_AREA) {
-    view.x += d;
+    dx += d;
   }
   if (mouse.y < SCROLL_AREA) {
-    view.y -= d;
+    dy -= d;
   }
   if (mouse.y > view.h - SCROLL_AREA) {
-    view.y += d;
+    dy += d;
   }
   
+  if (dx != 0 || dy != 0) {
+    scroll_view(dx, dy);
+  }
+}
+
+
+void UI::scroll_view (int dx, int dy) {
+  view.x += dx;
+  view.y += dy;
+
   const int right = level.w * TILE_SIZE;
   const int bottom = level.h * TILE_SIZE;
 

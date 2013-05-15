@@ -21,10 +21,8 @@ std::list<Action*> Dig::work (DebugInfo& dbg, Level& level,
   // Can't use foreach since the set needs to be modified
   for (auto it = undug_tiles.begin(); it != undug_tiles.end(); ) {
     const Point& p = *it;
-    const int x = p.x;
-    const int y = p.y;
-    if (level.tile(x, y).type == Tile::WALL) {
-      if (!level.surrounded(x, y)) {
+    if (level.diggable(p)) {
+      if (!level.surrounded(p)) {
         workable.push_back(p);
       }
       else {

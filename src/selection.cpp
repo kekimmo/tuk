@@ -19,7 +19,7 @@ void Selection::finish () {
 }
 
 
-void Selection::foreach (std::function<void (int, int)> callback) const {
+void Selection::foreach (const std::function<void (int, int)>& callback) const {
   int x1, y1, x2, y2;
 
   if (from.x < to.x) {
@@ -45,6 +45,13 @@ void Selection::foreach (std::function<void (int, int)> callback) const {
       callback(x, y);
     }
   }
+}
+
+
+void Selection::foreach (const std::function<void (const Point&)>& callback) const {
+  foreach([&callback](int x, int y) {
+    callback(Point(x, y));
+  });
 }
 
 

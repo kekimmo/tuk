@@ -15,7 +15,7 @@ public:
   Tile& tile (int x, int y) const;
   bool passable (int x, int y) const;
   bool diggable (const Point& p) const;
-  bool surrounded (int x, int y) const;
+  bool surrounded (const Point& p) const;
 
   const int w;
   const int h;

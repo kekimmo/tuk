@@ -16,7 +16,8 @@ struct Selection {
   void start (const Point& p);
   void update (const Point& p);
   void finish ();
-  void foreach (std::function<void (int, int)> callback) const;
+  void foreach (const std::function<void (int, int)>& callback) const;
+  void foreach (const std::function<void (const Point&)>& callback) const;
 
   Area area () const;
   std::set<Point> points () const;
