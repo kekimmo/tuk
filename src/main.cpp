@@ -137,6 +137,7 @@ void game_main (UI& ui, const Textures& tex, Level& level, std::vector<Actor*>& 
             // Toggle free running
             case SDLK_f:
               freerun = !freerun;
+              fprintf(stderr, "-!- %s.\n", freerun ? "Running" : "Paused");
               break;
 
             // Save
@@ -207,37 +208,45 @@ void game_main (UI& ui, const Textures& tex, Level& level, std::vector<Actor*>& 
 
             case SDLK_SPACE:
               advance = true;
+              fprintf(stderr, "-!- Step.\n");
               break;
 
             case SDLK_d:
-              if (editor.active) {
-                if (ui.state == UI::SELECTED) {
+              if (ui.state == UI::SELECTED) {
+                if (editor.active) {
                   if (editor.brush_type == editor.TILE) {
                     ui.sel.foreach([&level,&editor](int x, int y) {
                       level.tile(x, y).type =
                         editor.brush_tiles[editor.brush_tile_selected];
                     });
                   }
-                  ui.state = UI::IDLE;
                 }
-              }
-              else {
-                // Get all tiles already ordered to be dug
-                std::set<Point> all_undug_tiles;
-                for (Dig* task : tasks) {
-                  all_undug_tiles.insert(task->undug_tiles.begin(), task->undug_tiles.end());
-                }
-
-                // Get all tiles that can be dug and aren't already ordered to be
-                std::set<Point> tiles;
-                ui.sel.foreach([&level,&tiles,&all_undug_tiles](const Point& p) {
-                  if (level.diggable(p) && !all_undug_tiles.count(p)) {
-                    tiles.insert(p);
+                else {
+                  // Get all tiles already ordered to be dug
+                  std::set<Point> all_undug_tiles;
+                  for (Dig* task : tasks) {
+                    all_undug_tiles.insert(task->undug_tiles.begin(), task->undug_tiles.end());
                   }
-                });
 
-                // Order them to be dug
-                tasks.push_back(new Dig(tiles));
+                  // Get all tiles that can be dug and aren't already ordered to be
+                  std::set<Point> tiles;
+                  ui.sel.foreach([&level,&tiles,&all_undug_tiles](const Point& p) {
+                    if (level.diggable(p) && !all_undug_tiles.count(p)) {
+                      tiles.insert(p);
+                    }
+                  });
+
+                  // Order them to be dug
+                  tasks.push_back(new Dig(tiles));
+                }
+                ui.state = UI::IDLE;
+              }
+              break;
+
+            case SDLK_c:
+              if (!tasks.empty()) {
+                delete tasks.front();
+                tasks.pop_front();
               }
               break;
 
@@ -357,17 +366,7 @@ void game_main (UI& ui, const Textures& tex, Level& level, std::vector<Actor*>& 
       ui.draw_selection(ui.sel, TILE_SIZE, tex.selection);
     }
 
-
-    glDisable(GL_TEXTURE_2D);
-    glLoadIdentity();
-    glColor3i(255, 40, 0);
-    glBegin(GL_QUADS);
-    glVertex2d(800, 600);
-    glVertex2d(800, 0);
-    glVertex2d(600, 0);
-    glVertex2d(600, 600);
-    glEnd();
-    glEnable(GL_TEXTURE_2D);
+    ui.draw_sidebar();
 
     SDL_GL_SwapBuffers();
 

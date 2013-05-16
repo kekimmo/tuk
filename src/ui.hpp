@@ -28,7 +28,7 @@ struct UI {
     SELECTED,
   } state = IDLE;
 
-  Point port;
+  Area port;
   Area view;
   Area view_tiles;
 
@@ -54,6 +54,8 @@ struct UI {
   // Get the tile the mouse is on
   Point mouse_tile () const;
 
+  void draw_sidebar () const;
+  void draw_minimap () const;
   void draw_selection (const Selection& sel, int texture_size, GLuint sel_tex);
   void draw_actors (const std::map<Point, std::list<const Actor*>>& occupied_tiles, int texture_size, GLuint tex_actor);
   void draw_level (const Level& level, const Textures& tex, int texture_size);

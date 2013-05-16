@@ -5,9 +5,9 @@
 
 
 UI::UI (int w, int h, const Level& level)
-  : level(level), port(w, h), view(Area { 0, 0, w, h }),
-    view_tiles(Area { 0, 0, view.w / TILE_SIZE + 2, view.h / TILE_SIZE + 2 }),
-    mouse(port.x / 2, port.y / 2) {
+  : level(level), port(0, 0, w, h), view(Area { 0, 0, w - 200, h }),
+    view_tiles(0, 0, view.w / TILE_SIZE + 2, view.h / TILE_SIZE + 2),
+    mouse(port.w / 2, port.h / 2) {
 }
 
 
@@ -120,6 +120,64 @@ int UI::pc (int coord) {
 }
 
 
+void UI::draw_sidebar () const {
+  const Area sidebar = { view.w, 0, port.w - view.w, port.h };
+
+  glDisable(GL_TEXTURE_2D);
+  glLoadIdentity();
+
+  glTranslatef(sidebar.x, sidebar.y, 0);
+
+  glColor3ub(100, 100, 100);
+  glBegin(GL_QUADS);
+  glVertex2i(sidebar.w, sidebar.h);
+  glVertex2i(sidebar.w, 0);
+  glVertex2i(0, 0);
+  glVertex2i(0, sidebar.h);
+  glEnd();
+
+  draw_minimap();
+}
+
+
+void UI::draw_minimap () const {
+  glLoadIdentity();
+
+  const int border = 10;
+  const Area minimap(
+      view.w + border, border,
+      port.w - view.w - 2 * border, view.w / 4 - 2 * border);
+
+  glTranslated(minimap.x, minimap.y, 0.0);
+  glScaled((double)minimap.w / level.w, (double)minimap.h / level.h, 0.0);
+
+  glBegin(GL_QUADS);
+  glColor3ub(0, 0, 0);
+  glVertex2i(level.w, level.h);
+  glVertex2i(level.w, 0);
+  glVertex2i(0, 0);
+  glVertex2i(0, level.h);
+  glEnd();
+
+  glColor3ub(255, 178, 127);
+  glPointSize(1.5);
+  glBegin(GL_POINTS);
+  for (int y = 0; y < level.w; ++y) {
+    for (int x = 0; x < level.h; ++x) {
+      Tile::Type type = level.tile(x, y).type;
+      if (type != Tile::WALL) {
+        glColor3ub(255, 178, 127);
+      }
+      else {
+        glColor3ub(127, 51, 0);
+      }
+      glVertex2d(x, y);
+    }
+  }
+  glEnd();
+}
+
+
 void UI::draw_selection (const Selection& sel, int texture_size, GLuint sel_tex) {
   sel.foreach([this, texture_size, sel_tex](int x, int y) {
       draw_texture(x * texture_size, y * texture_size, sel_tex, texture_size);
@@ -195,12 +253,12 @@ void UI::draw_tile (const Level& level, int x, int y,
   const int px = pc(x);
   const int py = pc(y);
 
-  if (tile.type == Tile::FLOOR) {
-    draw_texture(px, py, tex.floor, texture_size);
-  }
-  else if (tile.type == Tile::WALL) {
+  // Draw the floor underneath anyway
+  draw_texture(px, py, tex.floor, texture_size);
+
+  if (tile.type == Tile::WALL) {
     auto w = [&level](int x, int y) {
-      return level.valid(x, y) &&
+      return !level.valid(x, y) ||
         level.tile(x, y).type == Tile::WALL;
     };
 
@@ -260,9 +318,11 @@ void UI::draw_texture (const Point& p, GLuint texture, int texture_size) {
 
 
 void UI::draw_texture (int x, int y, GLuint texture, int texture_size, bool center, int angle) {
+  glEnable(GL_TEXTURE_2D);
+  glLoadIdentity();
+
   glBindTexture(GL_TEXTURE_2D, texture);
 
-  glLoadIdentity();
   glTranslated(x - view.x, y - view.y, 0.0);
 
   glScaled(texture_size, texture_size, 1.0);
