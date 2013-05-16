@@ -33,13 +33,18 @@ Tile& Level::tile (int x, int y) const {
 }
 
 
+Tile& Level::tile (const Point& p) const {
+  return tile(p.x, p.y);
+}
+
+
 bool Level::passable (int x, int y) const {
   return this->valid(x, y) && this->tile(x, y).type == Tile::FLOOR;
 }
 
 
 bool Level::diggable (const Point& p) const {
-  return this->valid(p.x, p.y) && this->tile(p.x, p.y).hp > 0;
+  return this->valid(p.x, p.y) && this->tile(p).type == Tile::WALL;
 }
 
 

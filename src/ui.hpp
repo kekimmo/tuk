@@ -52,11 +52,13 @@ struct UI {
     SELECTED,
   } state = IDLE;
 
-  enum {
+  enum Mode {
     NOTHING,
+    EDITING,
     DIGGING,
     BUILDING,
-  } select_for = NOTHING;
+  };
+  Mode select_for = NOTHING;
 
   struct {
     bool tiles = true;
@@ -64,15 +66,31 @@ struct UI {
     bool paths = true;
   } layers;
 
+  struct {
+    enum {
+      TILE,
+      ACTOR,
+    } brush_type = TILE;
+    std::vector<Tile::Type> brush_tiles = {
+      Tile::FLOOR,
+      Tile::WALL,
+      Tile::GOLD,
+    };
+    long unsigned int brush_tile_selected = 0;
+  } editor;
+
   UI (int w, int h, Level& level, Pool& actors, Tasklist& tasks);
 
   void dig ();
   void build ();
+  void edit ();
+  void tile_prev ();
+  void tile_next ();
 
   void accept ();
   void cancel ();
 
-  void start_selecting ();
+  void start_selecting (Mode mode);
   void cancel_selecting ();
   const std::set<Point>& finish_selecting ();
 

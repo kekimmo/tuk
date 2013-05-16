@@ -17,8 +17,12 @@ GLuint cursor_texture (const Textures& tex, const Tile::Type type) {
     case Tile::WALL:
       return tex.wall_full;
 
+    case Tile::GOLD:
+      return tex.gold;
+
     default:
-      return NULL_TEXTURE;
+      raisef("Tried to get cursor texture for a weird tile: %d [%c]",
+          type, type);
   }
 }
 

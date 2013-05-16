@@ -15,8 +15,7 @@ UI::UI (int w, int h, Level& level, Pool& actors, Tasklist& tasks)
 
 void UI::dig () {
   if (state == IDLE) {
-    select_for = DIGGING;
-    start_selecting();
+    start_selecting(DIGGING);
   }
   else {
     whine("Tried to enter dig mode while busy.");
@@ -26,11 +25,20 @@ void UI::dig () {
 
 void UI::build () {
   if (state == IDLE) {
-    select_for = BUILDING;
-    start_selecting();
+    start_selecting(BUILDING);
   }
   else {
-    whine("Tried to enter building mode while busy.");
+    whine("Tried to enter build mode while busy.");
+  }
+}
+
+
+void UI::edit () {
+  if (state == IDLE) {
+    start_selecting(EDITING);
+  }
+  else {
+    whine("Tried to enter edit mode while busy.");
   }
 }
 
@@ -38,16 +46,23 @@ void UI::build () {
 void UI::accept () {
   switch (select_for) {
     case NOTHING:
-      // Nothing important here
+      whine("Tried to accept nothing.");
+      break;
+
+    case EDITING:
+      for (const Point& p : finish_selecting()) {
+        tile_freshen(level.tile(p), editor.brush_tiles[editor.brush_tile_selected]);
+      }
+      // Immediately enter editing mode again
+      start_selecting(EDITING);
       break;
 
     case DIGGING:
-      select_for = NOTHING;
       start_digging(finish_selecting());
       break;
 
     case BUILDING:
-      select_for = NOTHING;
+      finish_selecting();
       break;
   }
 }
@@ -57,9 +72,10 @@ void UI::cancel () {
   if (select_for == NOTHING) {
     whine("Tried to cancel nothing.");
   }
-
-  select_for = NOTHING;
-  cancel_selecting();
+  else {
+    select_for = NOTHING;
+    cancel_selecting();
+  }
 }
 
 
@@ -82,8 +98,9 @@ void UI::start_digging (const std::set<Point>& tiles) {
 }
 
 
-void UI::start_selecting () {
+void UI::start_selecting (Mode mode) {
   if (state == IDLE) {
+    select_for = mode;
     selected_tiles.clear();
     state = SELECTING;
   }
@@ -113,14 +130,13 @@ const std::set<Point>& UI::finish_selecting () {
     case IDLE:
       raise("Tried to finish selecting when not selecting");
 
-    case SELECTING:
-      raise("Tried to finish selecting even though nothing has been selected");
-
-    case SELECTING_DRAGGING:
-      raise("Tried to finish selecting while dragging");
-
+    case SELECTING_DRAGGING: // just ignore the last selection
+      //raise("Tried to finish selecting while dragging");
+    case SELECTING: // just return nothing
+     // raise("Tried to finish selecting even though nothing has been selected");
     case SELECTED:
       state = IDLE;
+      select_for = NOTHING;
       return selected_tiles;
 
     default:
@@ -170,7 +186,9 @@ void UI::mouse_down () {
 
     case MINIMAP_DRAGGING:
     case SELECTING_DRAGGING:
-      raise("Logic error: mouse_down() when it should already be down");
+      //raise("Logic error: mouse_down() when it should already be down");
+      // Apparently this order sometimes happens, don't crash
+      break;
   }
 }
 
@@ -187,7 +205,9 @@ void UI::mouse_up () {
 
     case SELECTING:
     case SELECTED:
-      raise("Logic error: mouse_up() when it should already be up");
+      //raise("Logic error: mouse_up() when it should already be up");
+      // Apparently this order sometimes happens, don't crash
+      break;
 
     case SELECTING_DRAGGING:
       sel.finish();
@@ -320,15 +340,23 @@ void UI::draw (const Textures& tex, const DebugInfo& dbg) const {
     }
   }
 
+  const GLuint brush = cursor_texture(tex,
+      editor.brush_tiles[editor.brush_tile_selected]);
+  const bool editing = select_for == EDITING;
+
   const Point& mt = mouse_tile();
-  if (select_for == DIGGING) {
+
+  if (select_for != NOTHING) {
+    if (editing) {
+      draw_texture(mt * TILE_SIZE, brush, TILE_SIZE);
+    }
     draw_texture(mt * TILE_SIZE, tex.selection, TILE_SIZE);
     for (const Point& p : selected_tiles) {
       draw_texture(p * TILE_SIZE, tex.selection, TILE_SIZE);
     }
   }
 
-  if (state == UI::SELECTING_DRAGGING) {
+  if (state == SELECTING_DRAGGING) {
     draw_selection(sel, TILE_SIZE, tex.selection);
   }
 
@@ -478,10 +506,11 @@ void UI::draw_tile (const Level& level, int x, int y,
   // Draw the floor underneath anyway
   draw_texture(px, py, tex.floor, texture_size);
 
-  if (tile.type == Tile::WALL) {
+  if (tile.type == Tile::WALL || tile.type == Tile::GOLD) {
     auto w = [&level](int x, int y) {
       return !level.valid(x, y) ||
-        level.tile(x, y).type == Tile::WALL;
+        level.tile(x, y).type == Tile::WALL ||
+        level.tile(x, y).type == Tile::GOLD;
     };
 
     struct { int x; int y; } c[4][3] = {
@@ -530,6 +559,10 @@ void UI::draw_tile (const Level& level, int x, int y,
       draw_texture(tx, ty, tex.wall_parts[p], texture_size / 2,
           false, i * 90);
     }
+
+    if (tile.type == Tile::GOLD) {
+      draw_texture(px, py, tex.gold, texture_size);
+    }
   }
 }
 
@@ -576,4 +609,25 @@ void UI::draw_texture (int x, int y, GLuint texture, int texture_size, bool cent
 void UI::whine (const char* msg) const {
   fprintf(stderr, "%s\n", msg);
 }
+
+
+template<typename T> void roll_inc (const T limit, T& value) {
+  value = (value < limit) ? (value + 1) : 0;
+}
+
+template<typename T> void roll_dec (const T limit, T& value) {
+  value = (value == 0) ? limit : (value - 1);
+}
+
+
+void UI::tile_prev () {
+  roll_dec(editor.brush_tiles.size() - 1, editor.brush_tile_selected);
+}
+
+
+void UI::tile_next () {
+  roll_inc(editor.brush_tiles.size() - 1, editor.brush_tile_selected);
+}
+
+
 

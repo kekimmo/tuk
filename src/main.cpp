@@ -39,15 +39,6 @@ void toggle (bool& var) {
 }
 
 
-template<typename T> void roll_inc (const T limit, T& value) {
-  value = (value < limit) ? (value + 1) : 0;
-}
-
-template<typename T> void roll_dec (const T limit, T& value) {
-  value = (value == 0) ? limit : (value - 1);
-}
-
-
 void save_state (const Level& level, const Pool& actors, const Tasklist& tasks) {
   const int MAXLEN = 128;
   char name[MAXLEN];
@@ -95,19 +86,6 @@ void game_main (UI& ui, const Textures& tex, Level& level, Pool& actors, Tasklis
   std::map<Point, std::list<const Actor*>> occupied_tiles;
 
   DebugInfo dbg;
-
-  struct {
-    bool active = false;
-    enum {
-      TILE,
-      ACTOR,
-    } brush_type = TILE;
-    std::vector<Tile::Type> brush_tiles = {
-      Tile::FLOOR,
-      Tile::WALL,
-    };
-    long unsigned int brush_tile_selected = 0;
-  } editor;
 
   SDL_WarpMouse(ui.view.w / 2, ui.view.h / 2);
   ui.mouse.x = ui.view.w / 2;
@@ -179,25 +157,13 @@ void game_main (UI& ui, const Textures& tex, Level& level, Pool& actors, Tasklis
               ui.scroll_view(0, 128);
               break;
 
-            case SDLK_q:
+            case SDLK_i:
               tmp = ui.mouse_tile();
               fprintf(stderr, "(%d, %d)\n", tmp.x, tmp.y);
               break;
 
-            case SDLK_F1:
-              toggle(editor.active);
-              break;
-
-            case SDLK_w:
-              if (editor.active) {
-                roll_dec(editor.brush_tiles.size() - 1, editor.brush_tile_selected);
-              }
-              break;
-
             case SDLK_e:
-              if (editor.active) {
-                roll_inc(editor.brush_tiles.size() - 1, editor.brush_tile_selected);
-              }
+              ui.edit();
               break;
 
             case SDLK_SPACE:
@@ -211,6 +177,14 @@ void game_main (UI& ui, const Textures& tex, Level& level, Pool& actors, Tasklis
 
             case SDLK_b:
               ui.build();
+              break;
+
+            case SDLK_q:
+              ui.tile_prev();
+              break;
+
+            case SDLK_w:
+              ui.tile_next();
               break;
 
             case SDLK_RETURN:
@@ -239,8 +213,17 @@ void game_main (UI& ui, const Textures& tex, Level& level, Pool& actors, Tasklis
 
         case SDL_MOUSEBUTTONDOWN:
           ui.mouse_move(event.button.x, event.button.y);
-          if (event.button.button == SDL_BUTTON_LEFT) {
-            ui.mouse_down();
+          switch (event.button.button) {
+            case SDL_BUTTON_LEFT:
+              ui.mouse_down();
+              break;
+
+            case SDL_BUTTON_RIGHT:
+              ui.accept();
+              break;
+
+            default:
+              break;
           }
           break;
 
@@ -309,7 +292,7 @@ Textures load_textures () {
     load_texture("tex/selection.png", TILE_SIZE),
     load_texture("tex/remove.png", TILE_SIZE),
     load_texture("tex/remove-inaccessible.png", TILE_SIZE),
-    load_texture("tex/undug.png", TILE_SIZE),
+    load_texture("tex/undug-blue.png", TILE_SIZE),
     load_texture("tex/actor.png", TILE_SIZE / 2),
     load_texture("tex/path.png", TILE_SIZE),
     load_texture("tex/floor.png", TILE_SIZE),

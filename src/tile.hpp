@@ -17,5 +17,8 @@ struct Tile {
 };
 
 
+void tile_freshen (Tile& tile, Tile::Type type);
+
+
 #endif /* end of include guard: TILE_HPP_1BK7VGXJ */
 
