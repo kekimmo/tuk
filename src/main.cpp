@@ -109,11 +109,6 @@ void game_main (UI& ui, const Textures& tex, Level& level, Pool& actors, Tasklis
     long unsigned int brush_tile_selected = 0;
   } editor;
 
-  std::list<Actor*> worker_pool;
-  for (Actor* actor : actors) {
-    worker_pool.push_back(actor);
-  }
-
   SDL_WarpMouse(ui.view.w / 2, ui.view.h / 2);
   ui.mouse.x = ui.view.w / 2;
   ui.mouse.y = ui.view.h / 2;
@@ -214,6 +209,10 @@ void game_main (UI& ui, const Textures& tex, Level& level, Pool& actors, Tasklis
               ui.dig();
               break;
 
+            case SDLK_b:
+              ui.build();
+              break;
+
             case SDLK_RETURN:
               ui.accept();
               break;
@@ -277,7 +276,7 @@ void game_main (UI& ui, const Textures& tex, Level& level, Pool& actors, Tasklis
       dbg.workable_tiles.clear();
       dbg.unworkable_tiles.clear();
 
-      Pool idle = worker_pool;
+      Pool idle = actors;
       Pool working;
 
       for (Dig* task : tasks) {
@@ -314,6 +313,7 @@ Textures load_textures () {
     load_texture("tex/actor.png", TILE_SIZE / 2),
     load_texture("tex/path.png", TILE_SIZE),
     load_texture("tex/floor.png", TILE_SIZE),
+    load_texture("tex/gold.png", TILE_SIZE),
     load_texture("tex/wall-full.png", TILE_SIZE),
     {
       load_texture("tex/wall.png", TILE_SIZE / 2),
@@ -356,7 +356,7 @@ void inner_main () {
   Textures tex = load_textures();
   
   LoadState state;
-  load("sav/016.sav", state);
+  load("sav/017.sav", state);
 
   //SDL_WM_GrabInput(SDL_GRAB_ON);
 

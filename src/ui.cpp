@@ -14,12 +14,24 @@ UI::UI (int w, int h, Level& level, Pool& actors, Tasklist& tasks)
 
 
 void UI::dig () {
-  if (state != IDLE) {
-    raise("Attempted to start dig mode while busy");
+  if (state == IDLE) {
+    select_for = DIGGING;
+    start_selecting();
   }
+  else {
+    whine("Tried to enter dig mode while busy.");
+  }
+}
 
-  select_for = DIGGING;
-  start_selecting();
+
+void UI::build () {
+  if (state == IDLE) {
+    select_for = BUILDING;
+    start_selecting();
+  }
+  else {
+    whine("Tried to enter building mode while busy.");
+  }
 }
 
 
@@ -31,23 +43,11 @@ void UI::accept () {
 
     case DIGGING:
       select_for = NOTHING;
-      const std::set<Point>& tiles = finish_selecting();
+      start_digging(finish_selecting());
+      break;
 
-      // Get all tiles already ordered to be dug
-      std::set<Point> all_undug_tiles;
-      for (Dig* task : tasks) {
-        all_undug_tiles.insert(task->undug_tiles.begin(), task->undug_tiles.end());
-      }
-
-      // Get all tiles that can be dug and aren't already ordered to be
-      std::set<Point> tiles_to_be_dug;
-      for (const Point& p : tiles) {
-        if (level.diggable(p) && !all_undug_tiles.count(p)) {
-          tiles_to_be_dug.insert(p);
-        }
-      }
-      // Order them to be dug
-      tasks.push_back(new Dig(tiles_to_be_dug));
+    case BUILDING:
+      select_for = NOTHING;
       break;
   }
 }
@@ -55,11 +55,30 @@ void UI::accept () {
 
 void UI::cancel () {
   if (select_for == NOTHING) {
-    raise("Tried to cancel nothing!");
+    whine("Tried to cancel nothing.");
   }
 
   select_for = NOTHING;
   cancel_selecting();
+}
+
+
+void UI::start_digging (const std::set<Point>& tiles) {
+  // Get all tiles already ordered to be dug
+  std::set<Point> all_undug_tiles;
+  for (Dig* task : tasks) {
+    all_undug_tiles.insert(task->undug_tiles.begin(), task->undug_tiles.end());
+  }
+
+  // Get all tiles that can be dug and aren't already ordered to be
+  std::set<Point> tiles_to_be_dug;
+  for (const Point& p : tiles) {
+    if (level.diggable(p) && !all_undug_tiles.count(p)) {
+      tiles_to_be_dug.insert(p);
+    }
+  }
+  // Order them to be dug
+  tasks.push_back(new Dig(tiles_to_be_dug));
 }
 
 
@@ -289,9 +308,9 @@ void UI::draw (const Textures& tex, const DebugInfo& dbg) const {
     draw_texture(p * TILE_SIZE, tex.remove, TILE_SIZE);
   }
 
-  for (const Point& p : dbg.unworkable_tiles) {
-    draw_texture(p * TILE_SIZE, tex.remove_inaccessible, TILE_SIZE);
-  }
+  //for (const Point& p : dbg.unworkable_tiles) {
+  //  draw_texture(p * TILE_SIZE, tex.remove_inaccessible, TILE_SIZE);
+  //}
 
   if (layers.paths) {
     for (const auto& path : dbg.paths) {
@@ -551,5 +570,10 @@ void UI::draw_texture (int x, int y, GLuint texture, int texture_size, bool cent
   glVertex2d(-.5, .5);
 
   glEnd();
+}
+
+
+void UI::whine (const char* msg) const {
+  fprintf(stderr, "%s\n", msg);
 }
 

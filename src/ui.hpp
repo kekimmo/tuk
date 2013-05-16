@@ -55,6 +55,7 @@ struct UI {
   enum {
     NOTHING,
     DIGGING,
+    BUILDING,
   } select_for = NOTHING;
 
   struct {
@@ -66,6 +67,8 @@ struct UI {
   UI (int w, int h, Level& level, Pool& actors, Tasklist& tasks);
 
   void dig ();
+  void build ();
+
   void accept ();
   void cancel ();
 
@@ -104,6 +107,8 @@ struct UI {
     Point tc (const Point& p) const;
     // Tile -> Pixel coordinates
     static int pc (int coord);
+    void start_digging (const std::set<Point>& tiles);
+    void whine (const char* msg) const;
 };
 
 

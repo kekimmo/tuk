@@ -8,8 +8,9 @@ struct Tile {
   enum Type {
     FLOOR = ' ',
     WALL = '#',
+    GOLD = '$',
   };
-  static constexpr const char* TYPECHARS = " #";
+  static constexpr const char* TYPECHARS = " #$";
 
   Type type = WALL;
   int hp = 0;

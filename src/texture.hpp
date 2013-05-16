@@ -19,6 +19,7 @@ struct Textures {
   GLuint actor;
   GLuint path;
   GLuint floor;
+  GLuint gold;
   GLuint wall_full;
   GLuint wall_parts[8];
 };

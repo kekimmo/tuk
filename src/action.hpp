@@ -45,5 +45,15 @@ struct DigAction : public Action {
 };
 
 
+struct MineAction : public Action {
+  MineAction (Actor& actor, const Point& target, Level& level);
+  virtual void perform () const override;
+  virtual std::string str () const override;
+
+  const Point target;
+  Level& level;
+};
+
+
 #endif /* end of include guard: ACTION_HPP_RKI6CFHG */
 

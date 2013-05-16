@@ -45,7 +45,28 @@ void DigAction::perform () const {
 }
 
 std::string DigAction::str () const {
-  return format("(%d, %d): Dig to (%d, %d)",
+  return format("(%d, %d): Mine (%d, %d)",
+      actor.p.x, actor.p.y,
+      target.x, target.y);
+}
+
+
+MineAction::MineAction (Actor& actor, const Point& target, Level& level)
+  : Action(actor), target(target), level(level) {
+}
+
+void MineAction::perform () const {
+  Tile& tile = level.tile(target.x, target.y);
+  if (tile.hp > 0) {
+    tile.hp -= 1;
+  }
+  if (tile.hp == 0) {
+    tile.type = Tile::FLOOR;
+  }
+}
+
+std::string MineAction::str () const {
+  return format("(%d, %d): Mine to (%d, %d)",
       actor.p.x, actor.p.y,
       target.x, target.y);
 }
