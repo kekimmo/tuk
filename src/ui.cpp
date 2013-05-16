@@ -4,10 +4,107 @@
 #include "ui.hpp"
 
 
-UI::UI (int w, int h, const Level& level)
-  : level(level), port(0, 0, w, h), view(Area { 0, 0, w - 200, h }),
+UI::UI (int w, int h, Level& level, std::list<Dig*>& tasks)
+  : level(level), tasks(tasks), port(0, 0, w, h), view(Area { 0, 0, w - 200, h }),
     view_tiles(0, 0, view.w / TILE_SIZE + 2, view.h / TILE_SIZE + 2),
     mouse(port.w / 2, port.h / 2) {
+}
+
+
+void UI::dig () {
+  if (state != IDLE) {
+    raise("Attempted to start dig mode while busy");
+  }
+
+  select_for = DIGGING;
+  start_selecting();
+}
+
+
+void UI::accept () {
+  switch (select_for) {
+    case NOTHING:
+      // Nothing important here
+      break;
+
+    case DIGGING:
+      select_for = NOTHING;
+      const std::set<Point>& tiles = finish_selecting();
+
+      // Get all tiles already ordered to be dug
+      std::set<Point> all_undug_tiles;
+      for (Dig* task : tasks) {
+        all_undug_tiles.insert(task->undug_tiles.begin(), task->undug_tiles.end());
+      }
+
+      // Get all tiles that can be dug and aren't already ordered to be
+      std::set<Point> tiles_to_be_dug;
+      for (const Point& p : tiles) {
+        if (level.diggable(p) && !all_undug_tiles.count(p)) {
+          tiles_to_be_dug.insert(p);
+        }
+      }
+      // Order them to be dug
+      tasks.push_back(new Dig(tiles_to_be_dug));
+      break;
+  }
+}
+
+
+void UI::cancel () {
+  if (select_for == NOTHING) {
+    raise("Tried to cancel nothing!");
+  }
+
+  select_for = NOTHING;
+  cancel_selecting();
+}
+
+
+void UI::start_selecting () {
+  if (state == IDLE) {
+    selected_tiles.clear();
+    state = SELECTING;
+  }
+  else {
+    raise("Tried to start selecting when already selecting");
+  }
+}
+
+
+void UI::cancel_selecting () {
+  switch (state) {
+    case SELECTING:
+    case SELECTING_DRAGGING:
+    case SELECTED:
+      state = IDLE;
+      break;
+
+    default:
+      raise("Tried to cancel selecting when not selecting");
+      break;
+  }
+}
+
+
+const std::set<Point>& UI::finish_selecting () {
+  switch (state) {
+    case IDLE:
+      raise("Tried to finish selecting when not selecting");
+
+    case SELECTING:
+      raise("Tried to finish selecting even though nothing has been selected");
+
+    case SELECTING_DRAGGING:
+      raise("Tried to finish selecting while dragging");
+
+    case SELECTED:
+      state = IDLE;
+      return selected_tiles;
+
+    default:
+      raise("Unexpected state");
+  }
 }
 
 
@@ -20,13 +117,8 @@ void UI::mouse_move (int x, int y) {
   mouse.x = x;
   mouse.y = y;
 
-  switch (state) {
-    case SELECTING:
-      sel.update(tc(mouse).clamped(0, 0, level.w - 1, level.h - 1));
-      break;
-
-    default:
-      break;
+  if (state == SELECTING_DRAGGING) {
+    sel.update(tc(mouse).clamped(0, 0, level.w - 1, level.h - 1));
   }
 }
 
@@ -34,25 +126,37 @@ void UI::mouse_move (int x, int y) {
 void UI::mouse_down () {
   switch (state) {
     case IDLE:
-    case SELECTED:
-      sel.start(tc(mouse));
-      state = SELECTING;
+      // just a random click that means nothing
       break;
 
-    default:
+    case SELECTING:
+    case SELECTED:
+      state = SELECTING_DRAGGING;
+      sel.start(tc(mouse).clamped(0, 0, level.w - 1, level.h - 1));
       break;
+
+    case SELECTING_DRAGGING:
+      raise("Logic error: mouse_down() when it should already be down");
   }
 }
 
 
 void UI::mouse_up () {
   switch (state) {
-    case SELECTING:
-      sel.finish();
-      state = SELECTED;
+    case IDLE:
+      // just a random click that means nothing
       break;
 
-    default:
+    case SELECTING:
+    case SELECTED:
+      raise("Logic error: mouse_up() when it should already be up");
+
+    case SELECTING_DRAGGING:
+      sel.finish();
+      sel.foreach([this](const Point& p) {
+        this->selected_tiles.insert(p);
+      });
+      state = SELECTED;
       break;
   }
 }
@@ -193,7 +297,7 @@ void UI::draw_actors (const std::map<Point, std::list<const Actor*>>& occupied_t
 
     int headcount = actors.size();
     if (headcount > 4) {
-      //raise("Too many actors on single tile: %ld", headcount); 
+      //raisef("Too many actors on single tile: %ld", headcount); 
       headcount = 4;
     }
 

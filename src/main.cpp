@@ -57,20 +57,20 @@ void save_state (const Level& level, const std::vector<Actor*>& actors) {
 
   do {
     if (num > 999) {
-      raise("More than %d save files!", 999);
+      raisef("More than %d save files!", 999);
     }
     snprintf(name, MAXLEN, "sav/%03d.sav", num);
     num += 1;
     fd = open(name, O_CREAT | O_EXCL | O_WRONLY, 0644);
     if (fd == -1 && errno != EEXIST) {
-      raise("Failed to open save file %s: %s", name, std::strerror(errno));
+      raisef("Failed to open save file %s: %s", name, std::strerror(errno));
     }
   }
   while (fd == -1);
 
   FILE* file = fdopen(fd, "wb");
   if (file == NULL) {
-    raise("Failed to open save file %s: %s", name, std::strerror(errno));
+    raisef("Failed to open save file %s: %s", name, std::strerror(errno));
   }
 
   SaveState state = {
@@ -86,7 +86,7 @@ void save_state (const Level& level, const std::vector<Actor*>& actors) {
 }
 
 
-void game_main (UI& ui, const Textures& tex, Level& level, std::vector<Actor*>& actors) {
+void game_main (UI& ui, const Textures& tex, Level& level, std::list<Dig*>& tasks, std::vector<Actor*>& actors) {
   Vec<int> mouse(0, 0);
 
   bool running = true;
@@ -107,8 +107,6 @@ void game_main (UI& ui, const Textures& tex, Level& level, std::vector<Actor*>& 
     };
     long unsigned int brush_tile_selected = 0;
   } editor;
-
-  std::list<Dig*> tasks;
 
   std::list<Actor*> worker_pool;
   for (Actor* actor : actors) {
@@ -212,35 +210,15 @@ void game_main (UI& ui, const Textures& tex, Level& level, std::vector<Actor*>& 
               break;
 
             case SDLK_d:
-              if (ui.state == UI::SELECTED) {
-                if (editor.active) {
-                  if (editor.brush_type == editor.TILE) {
-                    ui.sel.foreach([&level,&editor](int x, int y) {
-                      level.tile(x, y).type =
-                        editor.brush_tiles[editor.brush_tile_selected];
-                    });
-                  }
-                }
-                else {
-                  // Get all tiles already ordered to be dug
-                  std::set<Point> all_undug_tiles;
-                  for (Dig* task : tasks) {
-                    all_undug_tiles.insert(task->undug_tiles.begin(), task->undug_tiles.end());
-                  }
+              ui.dig();
+              break;
 
-                  // Get all tiles that can be dug and aren't already ordered to be
-                  std::set<Point> tiles;
-                  ui.sel.foreach([&level,&tiles,&all_undug_tiles](const Point& p) {
-                    if (level.diggable(p) && !all_undug_tiles.count(p)) {
-                      tiles.insert(p);
-                    }
-                  });
+            case SDLK_RETURN:
+              ui.accept();
+              break;
 
-                  // Order them to be dug
-                  tasks.push_back(new Dig(tiles));
-                }
-                ui.state = UI::IDLE;
-              }
+            case SDLK_ESCAPE:
+              ui.cancel();
               break;
 
             case SDLK_c:
@@ -261,12 +239,16 @@ void game_main (UI& ui, const Textures& tex, Level& level, std::vector<Actor*>& 
 
         case SDL_MOUSEBUTTONDOWN:
           ui.mouse_move(event.button.x, event.button.y);
-          ui.mouse_down();
+          if (event.button.button == SDL_BUTTON_LEFT) {
+            ui.mouse_down();
+          }
           break;
 
         case SDL_MOUSEBUTTONUP:
           ui.mouse_move(event.button.x, event.button.y);
-          ui.mouse_up();
+          if (event.button.button == SDL_BUTTON_LEFT) {
+            ui.mouse_up();
+          }
           break;
       }
     }
@@ -357,9 +339,15 @@ void game_main (UI& ui, const Textures& tex, Level& level, std::vector<Actor*>& 
     if (draw_brush) {
       ui.draw_texture(mouse_tile * TILE_SIZE, brush_texture, TILE_SIZE);
     }
-    ui.draw_texture(mouse_tile * TILE_SIZE, tex.selection, TILE_SIZE);
 
-    if (ui.state == UI::SELECTING || ui.state == UI::SELECTED) {
+    if (ui.select_for == UI::DIGGING) {
+      ui.draw_texture(mouse_tile * TILE_SIZE, tex.selection, TILE_SIZE);
+      for (const Point& p : ui.selected_tiles) {
+        ui.draw_texture(p * TILE_SIZE, tex.selection, TILE_SIZE);
+      }
+    }
+
+    if (ui.state == UI::SELECTING_DRAGGING) {
       if (draw_brush) {
         ui.draw_selection(ui.sel, TILE_SIZE, brush_texture);
       }
@@ -435,9 +423,11 @@ void inner_main () {
   Level* level = state.level;
   auto& actors = state.actors;
 
-  UI ui(win_w, win_h, *level);
+  std::list<Dig*> tasks;
 
-  game_main(ui, tex, *level, actors);
+  UI ui(win_w, win_h, *level, tasks);
+
+  game_main(ui, tex, *level, tasks, actors);
 
   for (Actor* actor : actors) {
     delete actor;

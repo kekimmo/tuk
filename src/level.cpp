@@ -7,7 +7,7 @@ Level::Level (int width, int height)
   : w(width), h(height)
 {
   if (w <= 0 || h <= 0) {
-    raise("Invalid dimensions: %d x %d", w, h);
+    raisef("Invalid dimensions: %d x %d", w, h);
   }
 
   _tiles = new Tile[w * h];
@@ -26,7 +26,7 @@ bool Level::valid (int x, int y) const {
 
 Tile& Level::tile (int x, int y) const {
   if (!this->valid(x, y)) {
-    raise("Coordinate outside level: (%d, %d)", x, y);
+    raisef("Coordinate outside level: (%d, %d)", x, y);
   }
 
   return _tiles[y * w + x];

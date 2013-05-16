@@ -7,6 +7,7 @@
 #include "selection.hpp"
 #include "actor.hpp"
 #include "texture.hpp"
+#include "dig.hpp"
 
 #include <map>
 #include <list>
@@ -20,13 +21,12 @@ struct UI {
   static const int TILE_SIZE = 32;
   static const int SCROLL_AREA = 100;
 
-  const Level& level;
+  Level& level;
+  std::list<Dig*>& tasks;
 
-  enum {
-    IDLE,
-    SELECTING,
-    SELECTED,
-  } state = IDLE;
+  bool selecting = false;
+  bool dragging = false;
+  std::set<Point> selected_tiles;
 
   Area port;
   Area view;
@@ -35,13 +35,33 @@ struct UI {
   Point mouse;
   Selection sel;
 
+  enum {
+    IDLE,
+    SELECTING,
+    SELECTING_DRAGGING,
+    SELECTED,
+  } state = IDLE;
+
+  enum {
+    NOTHING,
+    DIGGING,
+  } select_for = NOTHING;
+
   struct {
     bool tiles = true;
     bool actors = true;
     bool paths = true;
   } layers;
 
-  UI (int w, int h, const Level& level);
+  UI (int w, int h, Level& level, std::list<Dig*>& tasks);
+
+  void dig ();
+  void accept ();
+  void cancel ();
+
+  void start_selecting ();
+  void cancel_selecting ();
+  const std::set<Point>& finish_selecting ();
 
   void mouse_move (const Point& p);
   void mouse_move (int x, int y);

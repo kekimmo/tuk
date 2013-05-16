@@ -15,6 +15,11 @@ void save (FILE* file, const SaveState& state) {
 }
 
 
+void save_tasks (FILE* file, const std::list<Dig*>& tasks) {
+
+}
+
+
 void save_actors (FILE* file, const std::vector<Actor*>& actors) {
   fprintf(file, "Actors: %ld\n", actors.size());
   for (const Actor* actor : actors) {
@@ -43,18 +48,18 @@ void save_tile (FILE* file, const Tile& tile) {
 void load (const char* filename, LoadState& state) {
   FILE* file = fopen(filename, "rb");
   if (file == NULL) {
-    raise("Failed to open save file %s: %s\n",
+    raisef("Failed to open save file %s: %s\n",
         filename, std::strerror(errno));
   }
   
   int version = 0;
   if (fscanf(file, "Version: %d\n", &version) != 1) {
-    raise("Invalid save version in %s", filename);
+    raisef("Invalid save version in %s", filename);
   }
 
   const int STATE_VERSION = 1;
   if (version != STATE_VERSION) {
-    raise("Save version mismatch: expected %d, got %d.\n",
+    raisef("Save version mismatch: expected %d, got %d.\n",
         STATE_VERSION, version);
   }
 
@@ -72,14 +77,14 @@ void load_actors (FILE* file, std::vector<Actor*>& actors) {
   int ret = fscanf(file, "Actors: %ld\n", &size);
   if (ret == EOF) {
     if (ferror(file)) {
-      raise(fmt, strerror(errno));
+      raisef(fmt, strerror(errno));
     }
     else {
-      raise(fmt, "Premature EOF");
+      raisef(fmt, "Premature EOF");
     }
   }
   else if (ret == 0) {
-    raise(fmt, "Invalid header!");
+    raisef(fmt, "Invalid header!");
   }
 
   actors.reserve(size);
@@ -87,7 +92,7 @@ void load_actors (FILE* file, std::vector<Actor*>& actors) {
   for (int i = 0; i < size; ++i) {
     int x, y;
     if (fscanf(file, "(%d, %d)\n", &x, &y) != 2) {
-      raise(fmt, "Invalid actor!");
+      raisef(fmt, "Invalid actor!");
     }
     actors.push_back(new Actor(x, y));
   }
@@ -100,7 +105,7 @@ Level* load_level (FILE* file) {
   const char* fmt = "Invalid level data: %s";
 
   if (fscanf(file, "Level: %d x %d\n", &w, &h) != 2) {
-    raise(fmt, "width / height");
+    raisef(fmt, "width / height");
   }
 
   Level* level = new Level(w, h);
@@ -112,21 +117,21 @@ Level* load_level (FILE* file) {
 
       int ret = fscanf(file, "[%c %03d]", &type, &hp);
       if (ret == EOF) {
-        raise("Failed to read save file: %s",
+        raisef("Failed to read save file: %s",
             ferror(file) ? strerror(errno): "premature EOF");
       }
       else if (ret != 2) {
-        raise(fmt, "could not read data");
+        raisef(fmt, "could not read data");
       }
       else if (!strchr(Tile::TYPECHARS, type)) {
-        raise("Invalid tile type: [%c]", type);
+        raisef("Invalid tile type: [%c]", type);
       }
       Tile& tile = level->tile(x, y);
       tile.type = (Tile::Type)type;
       tile.hp = hp;
     }
     if (fgetc(file) != '\n') {
-      raise(fmt, "row");
+      raisef(fmt, "row");
     }
   }
 

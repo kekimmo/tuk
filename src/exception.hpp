@@ -16,7 +16,8 @@ class Exception : public std::exception {
 };
 
 
-#define raise(fmt,...) throw Exception(__FILE__, __LINE__, __func__, fmt, __VA_ARGS__)
+#define raise(str) throw Exception(__FILE__, __LINE__, __func__, str)
+#define raisef(fmt,...) throw Exception(__FILE__, __LINE__, __func__, fmt, __VA_ARGS__)
 
 
 #endif /* end of include guard: EXCEPTION_HPP_GGSANEU2 */

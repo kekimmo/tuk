@@ -31,7 +31,7 @@ void draw_actors (const std::map<Point, std::list<const Actor*>>& occupied_tiles
 
     int headcount = actors.size();
     if (headcount > 4) {
-      //raise("Too many actors on single tile: %ld", headcount); 
+      //raisef("Too many actors on single tile: %ld", headcount); 
       headcount = 4;
     }
 

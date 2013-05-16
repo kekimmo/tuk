@@ -26,7 +26,7 @@ GLuint cursor_texture (const Textures& tex, const Tile::Type type) {
 GLuint load_texture (const char* filename, const int texture_size) {
   FILE* file = fopen(filename, "rb");
   if (file == NULL) {
-    raise("Failed to open %s: %s", filename, strerror(errno));
+    raisef("Failed to open %s: %s", filename, strerror(errno));
     return NULL_TEXTURE;
   }
 
