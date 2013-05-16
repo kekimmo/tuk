@@ -6,7 +6,7 @@
 
 UI::UI (int w, int h, Level& level, Tasklist& tasks)
   : level(level), tasks(tasks), port(0, 0, w, h), view(Area { 0, 0, w - 200, h }),
-    view_tiles(0, 0, view.w / TILE_SIZE + 2, view.h / TILE_SIZE + 2),
+    view_tiles(0, 0, view.w / TILE_SIZE + 1, view.h / TILE_SIZE + 1),
     mouse(port.w / 2, port.h / 2) {
 }
 
@@ -381,8 +381,8 @@ void UI::draw_level (const Level& level, const Textures& tex,
 {
   const int x1 = view.x / TILE_SIZE;
   const int y1 = view.y / TILE_SIZE;
-  const int x2 = std::min(x1 + view_tiles.w, level.w);
-  const int y2 = std::min(y1 + view_tiles.h, level.h);
+  const int x2 = std::min(x1 + view_tiles.w + 1, level.w);
+  const int y2 = std::min(y1 + view_tiles.h + 1, level.h);
 
   for (int y = y1; y < y2; ++y) {
     for (int x = x1; x < x2; ++x) {
