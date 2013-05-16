@@ -222,13 +222,20 @@ void game_main (UI& ui, const Textures& tex, Level& level, std::vector<Actor*>& 
                 }
               }
               else {
-                // Get all diggable tiles
+                // Get all tiles already ordered to be dug
+                std::set<Point> all_undug_tiles;
+                for (Dig* task : tasks) {
+                  all_undug_tiles.insert(task->undug_tiles.begin(), task->undug_tiles.end());
+                }
+
+                // Get all tiles that can be dug and aren't already ordered to be
                 std::set<Point> tiles;
-                ui.sel.foreach([&level,&tiles](const Point& p) {
-                  if (level.diggable(p)) {
+                ui.sel.foreach([&level,&tiles,&all_undug_tiles](const Point& p) {
+                  if (level.diggable(p) && !all_undug_tiles.count(p)) {
                     tiles.insert(p);
                   }
                 });
+
                 // Order them to be dug
                 tasks.push_back(new Dig(tiles));
               }
