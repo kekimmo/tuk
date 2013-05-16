@@ -23,6 +23,7 @@ struct UI {
   static const int MINIMAP_BORDER = 40;
 
   Level& level;
+  Pool& actors;
   Tasklist& tasks;
 
   bool selecting = false;
@@ -62,7 +63,7 @@ struct UI {
     bool paths = true;
   } layers;
 
-  UI (int w, int h, Level& level, Tasklist& tasks);
+  UI (int w, int h, Level& level, Pool& actors, Tasklist& tasks);
 
   void dig ();
   void accept ();
@@ -86,15 +87,17 @@ struct UI {
   // Get the tile the mouse is on
   Point mouse_tile () const;
 
+  void draw (const Textures& tex, const DebugInfo& dbg) const;
+
   void draw_sidebar () const;
   void draw_minimap () const;
-  void draw_selection (const Selection& sel, int texture_size, GLuint sel_tex);
-  void draw_actors (const std::map<Point, std::list<const Actor*>>& occupied_tiles, int texture_size, GLuint tex_actor);
-  void draw_level (const Level& level, const Textures& tex, int texture_size);
+  void draw_selection (const Selection& sel, int texture_size, GLuint sel_tex) const;
+  void draw_actors (const std::map<Point, std::list<const Actor*>>& occupied_tiles, int texture_size, GLuint tex_actor) const;
+  void draw_level (const Level& level, const Textures& tex, int texture_size) const;
   void draw_tile (const Level& level, int x, int y,
-      const Textures& tex, int texture_size);
-  void draw_texture (const Point& p, GLuint texture, int texture_size);
-  void draw_texture (int x, int y, GLuint texture, int texture_size, bool center = false, int angle = 0);
+      const Textures& tex, int texture_size) const;
+  void draw_texture (const Point& p, GLuint texture, int texture_size) const;
+  void draw_texture (int x, int y, GLuint texture, int texture_size, bool center = false, int angle = 0) const;
 
   private:
     // Pixel -> Tile coordinates

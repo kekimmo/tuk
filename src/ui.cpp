@@ -4,8 +4,10 @@
 #include "ui.hpp"
 
 
-UI::UI (int w, int h, Level& level, Tasklist& tasks)
-  : level(level), tasks(tasks), port(0, 0, w, h), view(Area { 0, 0, w - 200, h }),
+UI::UI (int w, int h, Level& level, Pool& actors, Tasklist& tasks)
+  : level(level), actors(actors), tasks(tasks),
+    port(0, 0, w, h),
+    view(0, 0, w - 200, h),
     view_tiles(0, 0, view.w / TILE_SIZE + 1, view.h / TILE_SIZE + 1),
     mouse(port.w / 2, port.h / 2) {
 }
@@ -260,6 +262,61 @@ int UI::pc (int coord) {
 }
 
 
+void UI::draw (const Textures& tex, const DebugInfo& dbg) const {
+  std::map<Point, std::list<const Actor*>> occupied_tiles;
+
+  for (const Actor* actor : actors) {
+    occupied_tiles[actor->p].push_back(actor);
+  }
+
+  glClear(GL_COLOR_BUFFER_BIT);
+  
+  if (layers.tiles) {
+    draw_level(level, tex, TILE_SIZE);
+  }
+
+  if (layers.actors) {
+    draw_actors(occupied_tiles, TILE_SIZE, tex.actor);
+  }
+
+  for (const Dig* task : tasks) {
+    for (const Point& p : task->undug_tiles) {
+      draw_texture(p * TILE_SIZE, tex.undug, TILE_SIZE);
+    }
+  }
+
+  for (const Point& p : dbg.workable_tiles) {
+    draw_texture(p * TILE_SIZE, tex.remove, TILE_SIZE);
+  }
+
+  for (const Point& p : dbg.unworkable_tiles) {
+    draw_texture(p * TILE_SIZE, tex.remove_inaccessible, TILE_SIZE);
+  }
+
+  if (layers.paths) {
+    for (const auto& path : dbg.paths) {
+      for (const auto& p : path) {
+        draw_texture(p.x * TILE_SIZE, p.y * TILE_SIZE, tex.path, TILE_SIZE);
+      }
+    }
+  }
+
+  const Point& mt = mouse_tile();
+  if (select_for == DIGGING) {
+    draw_texture(mt * TILE_SIZE, tex.selection, TILE_SIZE);
+    for (const Point& p : selected_tiles) {
+      draw_texture(p * TILE_SIZE, tex.selection, TILE_SIZE);
+    }
+  }
+
+  if (state == UI::SELECTING_DRAGGING) {
+    draw_selection(sel, TILE_SIZE, tex.selection);
+  }
+
+  draw_sidebar();
+}
+
+
 void UI::draw_sidebar () const {
 
   glDisable(GL_TEXTURE_2D);
@@ -324,7 +381,7 @@ void UI::draw_minimap () const {
 }
 
 
-void UI::draw_selection (const Selection& sel, int texture_size, GLuint sel_tex) {
+void UI::draw_selection (const Selection& sel, int texture_size, GLuint sel_tex) const {
   sel.foreach([this, texture_size, sel_tex](int x, int y) {
       draw_texture(x * texture_size, y * texture_size, sel_tex, texture_size);
   });
@@ -332,7 +389,7 @@ void UI::draw_selection (const Selection& sel, int texture_size, GLuint sel_tex)
 
 
 void UI::draw_actors (const std::map<Point, std::list<const Actor*>>& occupied_tiles,
-    int texture_size, GLuint tex_actor) {
+    int texture_size, GLuint tex_actor) const {
   for (const auto& kv : occupied_tiles) {
     const Point& p = kv.first;
     const auto& actors = kv.second;
@@ -377,7 +434,7 @@ void UI::draw_actors (const std::map<Point, std::list<const Actor*>>& occupied_t
 }
 
 void UI::draw_level (const Level& level, const Textures& tex,
-    int texture_size)
+    int texture_size) const
 {
   const int x1 = view.x / TILE_SIZE;
   const int y1 = view.y / TILE_SIZE;
@@ -393,7 +450,7 @@ void UI::draw_level (const Level& level, const Textures& tex,
 
 
 void UI::draw_tile (const Level& level, int x, int y,
-    const Textures& tex, int texture_size) {
+    const Textures& tex, int texture_size) const {
   const Tile& tile = level.tile(x, y);
 
   const int px = pc(x);
@@ -458,12 +515,12 @@ void UI::draw_tile (const Level& level, int x, int y,
 }
 
 
-void UI::draw_texture (const Point& p, GLuint texture, int texture_size) {
+void UI::draw_texture (const Point& p, GLuint texture, int texture_size) const {
   draw_texture(p.x, p.y, texture, texture_size);
 }
 
 
-void UI::draw_texture (int x, int y, GLuint texture, int texture_size, bool center, int angle) {
+void UI::draw_texture (int x, int y, GLuint texture, int texture_size, bool center, int angle) const {
   glEnable(GL_TEXTURE_2D);
   glLoadIdentity();
 

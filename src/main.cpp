@@ -295,68 +295,7 @@ void game_main (UI& ui, const Textures& tex, Level& level, Pool& actors, Tasklis
       }
     }
 
-    occupied_tiles.clear();
-    for (const Actor* actor : actors) {
-      occupied_tiles[actor->p].push_back(actor);
-    }
-
-    glClear(GL_COLOR_BUFFER_BIT);
-    
-    if (ui.layers.tiles) {
-      ui.draw_level(level, tex, TILE_SIZE);
-    }
-
-    if (ui.layers.actors) {
-      ui.draw_actors(occupied_tiles, TILE_SIZE, tex.actor);
-    }
-
-    for (const Dig* task : tasks) {
-      for (const Point& p : task->undug_tiles) {
-        ui.draw_texture(p * TILE_SIZE, tex.undug, TILE_SIZE);
-      }
-    }
-
-    for (const Point& p : dbg.workable_tiles) {
-      ui.draw_texture(p * TILE_SIZE, tex.remove, TILE_SIZE);
-    }
-
-    for (const Point& p : dbg.unworkable_tiles) {
-      ui.draw_texture(p * TILE_SIZE, tex.remove_inaccessible, TILE_SIZE);
-    }
-
-    if (ui.layers.paths) {
-      for (const auto& path : dbg.paths) {
-        for (const auto& p : path) {
-          ui.draw_texture(p.x * TILE_SIZE, p.y * TILE_SIZE, tex.path, TILE_SIZE);
-        }
-      }
-    }
-
-    GLuint brush_texture = cursor_texture(tex,
-        editor.brush_tiles[editor.brush_tile_selected]);
-    const bool draw_brush = editor.active && editor.brush_type == editor.TILE;
-
-    const Point& mouse_tile = ui.mouse_tile();
-    if (draw_brush) {
-      ui.draw_texture(mouse_tile * TILE_SIZE, brush_texture, TILE_SIZE);
-    }
-
-    if (ui.select_for == UI::DIGGING) {
-      ui.draw_texture(mouse_tile * TILE_SIZE, tex.selection, TILE_SIZE);
-      for (const Point& p : ui.selected_tiles) {
-        ui.draw_texture(p * TILE_SIZE, tex.selection, TILE_SIZE);
-      }
-    }
-
-    if (ui.state == UI::SELECTING_DRAGGING) {
-      if (draw_brush) {
-        ui.draw_selection(ui.sel, TILE_SIZE, brush_texture);
-      }
-      ui.draw_selection(ui.sel, TILE_SIZE, tex.selection);
-    }
-
-    ui.draw_sidebar();
-
+    ui.draw(tex, dbg);
     SDL_GL_SwapBuffers();
 
     /*if (freerun) {
@@ -425,8 +364,7 @@ void inner_main () {
   auto& actors = state.actors;
   auto& tasks = state.tasks;
 
-
-  UI ui(win_w, win_h, *level, tasks);
+  UI ui(win_w, win_h, *level, actors, tasks);
 
   game_main(ui, tex, *level, actors, tasks);
 
