@@ -13,5 +13,6 @@ add_executable(main
   ui.cpp
   dig.cpp
   string.cpp
+  area.cpp
 )
 

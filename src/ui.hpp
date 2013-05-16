@@ -19,7 +19,8 @@ extern "C" {
 
 struct UI {
   static const int TILE_SIZE = 32;
-  static const int SCROLL_AREA = 100;
+  static const int SCROLL_AREA = 40;
+  static const int MINIMAP_BORDER = 40;
 
   Level& level;
   Tasklist& tasks;
@@ -28,15 +29,23 @@ struct UI {
   bool dragging = false;
   std::set<Point> selected_tiles;
 
-  Area port;
+  const Area port;
   Area view;
   Area view_tiles;
+
+  const Area sidebar = { view.w, 0, port.w - view.w, port.h };
+  const Area minimap = {
+      sidebar.x + MINIMAP_BORDER, sidebar.y + MINIMAP_BORDER,
+      sidebar.w - 2 * MINIMAP_BORDER, sidebar.h / 4 - 2 * MINIMAP_BORDER };
+  const Vec<double> minimap_scale = { (double)minimap.w / level.w,
+                                      (double)minimap.h / level.h };
 
   Point mouse;
   Selection sel;
 
   enum {
     IDLE,
+    MINIMAP_DRAGGING,
     SELECTING,
     SELECTING_DRAGGING,
     SELECTED,
@@ -70,6 +79,9 @@ struct UI {
 
   void update ();
   void scroll_view (int dx, int dy);
+  void center_view (int x, int y);
+  void center_view_minimap (int x, int y);
+  void set_view (int x, int y);
 
   // Get the tile the mouse is on
   Point mouse_tile () const;

@@ -117,8 +117,17 @@ void UI::mouse_move (int x, int y) {
   mouse.x = x;
   mouse.y = y;
 
-  if (state == SELECTING_DRAGGING) {
-    sel.update(tc(mouse).clamped(0, 0, level.w - 1, level.h - 1));
+  switch (state) {
+    case MINIMAP_DRAGGING:
+      center_view_minimap(x, y);
+      break;
+
+    case SELECTING_DRAGGING:
+      sel.update(tc(mouse).clamped(0, 0, level.w - 1, level.h - 1));
+      break;
+
+    default:
+      break;
   }
 }
 
@@ -126,7 +135,10 @@ void UI::mouse_move (int x, int y) {
 void UI::mouse_down () {
   switch (state) {
     case IDLE:
-      // just a random click that means nothing
+      if (minimap.contains(mouse)) {
+        state = MINIMAP_DRAGGING;
+        center_view_minimap(mouse.x, mouse.y);
+      }
       break;
 
     case SELECTING:
@@ -135,6 +147,7 @@ void UI::mouse_down () {
       sel.start(tc(mouse).clamped(0, 0, level.w - 1, level.h - 1));
       break;
 
+    case MINIMAP_DRAGGING:
     case SELECTING_DRAGGING:
       raise("Logic error: mouse_down() when it should already be down");
   }
@@ -145,6 +158,10 @@ void UI::mouse_up () {
   switch (state) {
     case IDLE:
       // just a random click that means nothing
+      break;
+
+    case MINIMAP_DRAGGING:
+      state = IDLE;
       break;
 
     case SELECTING:
@@ -170,13 +187,13 @@ void UI::update () {
   if (mouse.x < SCROLL_AREA) {
     dx -= d;
   }
-  if (mouse.x > view.w - SCROLL_AREA) {
+  if (mouse.x > port.w - SCROLL_AREA) {
     dx += d;
   }
   if (mouse.y < SCROLL_AREA) {
     dy -= d;
   }
-  if (mouse.y > view.h - SCROLL_AREA) {
+  if (mouse.y > port.h - SCROLL_AREA) {
     dy += d;
   }
   
@@ -187,25 +204,44 @@ void UI::update () {
 
 
 void UI::scroll_view (int dx, int dy) {
-  view.x += dx;
-  view.y += dy;
+  set_view(view.x += dx, view.y += dy);
+}
 
+
+void UI::center_view (int x, int y) {
+  set_view(x - view.w / 2, y - view.h / 2);
+}
+
+
+void UI::center_view_minimap (int x, int y) {
+  const int vx = pc((x - minimap.x) / minimap_scale.x);
+  const int vy = pc((y - minimap.y) / minimap_scale.y);
+  center_view(vx, vy);
+}
+
+
+void UI::set_view (int x, int y) {
   const int right = level.w * TILE_SIZE;
   const int bottom = level.h * TILE_SIZE;
 
-  if (view.x + view.w > right) {
-    view.x = right - view.w;
+  if (x + view.w > right) {
+    x = right - view.w;
   }
-  if (view.y + view.h > bottom) {
-    view.y = bottom - view.h;
+  if (y + view.h > bottom) {
+    y = bottom - view.h;
   }
 
-  if (view.x < 0) {
-    view.x = 0;
+  if (x < 0) {
+    x = 0;
   }
-  if (view.y < 0) {
-    view.y = 0;
+  if (y < 0) {
+    y = 0;
   }
+
+  view.x = x;
+  view.y = y;
+  view_tiles.x = x / TILE_SIZE;
+  view_tiles.y = y / TILE_SIZE;
 }
 
 
@@ -225,7 +261,6 @@ int UI::pc (int coord) {
 
 
 void UI::draw_sidebar () const {
-  const Area sidebar = { view.w, 0, port.w - view.w, port.h };
 
   glDisable(GL_TEXTURE_2D);
   glLoadIdentity();
@@ -247,22 +282,19 @@ void UI::draw_sidebar () const {
 void UI::draw_minimap () const {
   glLoadIdentity();
 
-  const int border = 10;
-  const Area minimap(
-      view.w + border, border,
-      port.w - view.w - 2 * border, view.w / 4 - 2 * border);
-
   glTranslated(minimap.x, minimap.y, 0.0);
-  glScaled((double)minimap.w / level.w, (double)minimap.h / level.h, 0.0);
+  glScaled(minimap_scale.x, minimap_scale.y, 0.0);
 
-  glBegin(GL_QUADS);
-  glColor3ub(0, 0, 0);
-  glVertex2i(level.w, level.h);
-  glVertex2i(level.w, 0);
-  glVertex2i(0, 0);
-  glVertex2i(0, level.h);
-  glEnd();
+  // Background
+  /* glBegin(GL_QUADS); */
+  /* glColor3ub(0, 0, 0); */
+  /* glVertex2i(level.w, level.h); */
+  /* glVertex2i(level.w, 0); */
+  /* glVertex2i(0, 0); */
+  /* glVertex2i(0, level.h); */
+  /* glEnd(); */
 
+  // Actual map
   glColor3ub(255, 178, 127);
   glPointSize(1.5);
   glBegin(GL_POINTS);
@@ -278,6 +310,16 @@ void UI::draw_minimap () const {
       glVertex2d(x, y);
     }
   }
+  glEnd();
+
+  // Viewport
+  glTranslated(view_tiles.x, view_tiles.y, 0);
+  glColor3ub(255, 255, 255);
+  glBegin(GL_LINE_LOOP);
+  glVertex2i(view_tiles.w, view_tiles.h);
+  glVertex2i(view_tiles.w, 0);
+  glVertex2i(0, 0);
+  glVertex2i(0, view_tiles.h);
   glEnd();
 }
 
