@@ -22,7 +22,7 @@ struct UI {
   static const int SCROLL_AREA = 100;
 
   Level& level;
-  std::list<Dig*>& tasks;
+  Tasklist& tasks;
 
   bool selecting = false;
   bool dragging = false;
@@ -53,7 +53,7 @@ struct UI {
     bool paths = true;
   } layers;
 
-  UI (int w, int h, Level& level, std::list<Dig*>& tasks);
+  UI (int w, int h, Level& level, Tasklist& tasks);
 
   void dig ();
   void accept ();

@@ -4,7 +4,7 @@
 #include "ui.hpp"
 
 
-UI::UI (int w, int h, Level& level, std::list<Dig*>& tasks)
+UI::UI (int w, int h, Level& level, Tasklist& tasks)
   : level(level), tasks(tasks), port(0, 0, w, h), view(Area { 0, 0, w - 200, h }),
     view_tiles(0, 0, view.w / TILE_SIZE + 2, view.h / TILE_SIZE + 2),
     mouse(port.w / 2, port.h / 2) {

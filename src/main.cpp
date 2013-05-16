@@ -48,7 +48,7 @@ template<typename T> void roll_dec (const T limit, T& value) {
 }
 
 
-void save_state (const Level& level, const std::vector<Actor*>& actors) {
+void save_state (const Level& level, const Pool& actors, const Tasklist& tasks) {
   const int MAXLEN = 128;
   char name[MAXLEN];
 
@@ -76,6 +76,7 @@ void save_state (const Level& level, const std::vector<Actor*>& actors) {
   SaveState state = {
     level,
     actors,
+    tasks,
   };
 
   save(file, state);
@@ -86,7 +87,7 @@ void save_state (const Level& level, const std::vector<Actor*>& actors) {
 }
 
 
-void game_main (UI& ui, const Textures& tex, Level& level, std::list<Dig*>& tasks, std::vector<Actor*>& actors) {
+void game_main (UI& ui, const Textures& tex, Level& level, Pool& actors, Tasklist& tasks) {
   Vec<int> mouse(0, 0);
 
   bool running = true;
@@ -140,7 +141,7 @@ void game_main (UI& ui, const Textures& tex, Level& level, std::list<Dig*>& task
 
             // Save
             case SDLK_s:
-              save_state(level, actors);
+              save_state(level, actors, tasks);
               break;
 
             // Reset level
@@ -416,18 +417,18 @@ void inner_main () {
   Textures tex = load_textures();
   
   LoadState state;
-  load("sav/011.sav", state);
+  load("sav/016.sav", state);
 
   //SDL_WM_GrabInput(SDL_GRAB_ON);
 
   Level* level = state.level;
   auto& actors = state.actors;
+  auto& tasks = state.tasks;
 
-  std::list<Dig*> tasks;
 
   UI ui(win_w, win_h, *level, tasks);
 
-  game_main(ui, tex, *level, tasks, actors);
+  game_main(ui, tex, *level, actors, tasks);
 
   for (Actor* actor : actors) {
     delete actor;

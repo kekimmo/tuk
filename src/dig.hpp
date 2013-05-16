@@ -33,5 +33,8 @@ struct Dig {
 };
 
 
+typedef std::list<Dig*> Tasklist;
+
+
 #endif /* end of include guard: DIG_HPP_QC4BRTMB */
 

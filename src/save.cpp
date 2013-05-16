@@ -12,15 +12,28 @@ void save (FILE* file, const SaveState& state) {
   fprintf(file, "Version: %d\n", STATE_VERSION);
   save_level(file, state.level);
   save_actors(file, state.actors);
+  save_tasks(file, state.tasks);
 }
 
 
-void save_tasks (FILE* file, const std::list<Dig*>& tasks) {
-
+void save_tasks (FILE* file, const Tasklist& tasks) {
+  fprintf(file, "Tasks: %ld\n", tasks.size());
+  for (const Dig* task : tasks) {
+    save_task(file, *task);
+  }
 }
 
 
-void save_actors (FILE* file, const std::vector<Actor*>& actors) {
+void save_task (FILE* file, const Dig& task) {
+  fprintf(file, "Dig:");
+  for (const Point& p : task.undug_tiles) {
+    fprintf(file, " (%d, %d)", p.x, p.y);
+  }
+  fprintf(file, "\n");
+}
+
+
+void save_actors (FILE* file, const Pool& actors) {
   fprintf(file, "Actors: %ld\n", actors.size());
   for (const Actor* actor : actors) {
     fprintf(file, "(%d, %d)\n",
@@ -48,7 +61,7 @@ void save_tile (FILE* file, const Tile& tile) {
 void load (const char* filename, LoadState& state) {
   FILE* file = fopen(filename, "rb");
   if (file == NULL) {
-    raisef("Failed to open save file %s: %s\n",
+    raisef("Failed to open save file %s: %s",
         filename, std::strerror(errno));
   }
   
@@ -59,40 +72,76 @@ void load (const char* filename, LoadState& state) {
 
   const int STATE_VERSION = 1;
   if (version != STATE_VERSION) {
-    raisef("Save version mismatch: expected %d, got %d.\n",
+    raisef("Save version mismatch: expected %d, got %d.",
         STATE_VERSION, version);
   }
 
   state.level = load_level(file);
   load_actors(file, state.actors);
+  load_tasks(file, state.tasks);
 
   fclose(file);
 }
 
 
-void load_actors (FILE* file, std::vector<Actor*>& actors) {
+void load_tasks (FILE* file, Tasklist& tasks) {
   long int size = 0;
-  const char* fmt = "Failed to read actors: %s";
+  
+  const int ret = fscanf(file, "Tasks: %ld\n", &size);
+  if (ret == EOF) {
+    raisef("Failed to read tasks: %s",
+        ferror(file) ? strerror(errno) : "Premature EOF");
+  }
+  else if (ret != 1) {
+    raise("Invalid task header");
+  }
+
+  for (int i = 0; i < size; ++i) {
+    char type[21]; // 20 chars and \0
+    if (fscanf(file, "%20[^:]:", type) != 1) {
+      raisef("Invalid task (%d)", i);
+    }
+
+    if (strcmp(type, "Dig") != 0) {
+      raisef("Unknown task type: %s", type);
+    }
+
+    std::set<Point> undug;
+    char c;
+    int x;
+    int y;
+    while ((c = fgetc(file)) == ' ') {
+      if (fscanf(file, "(%d, %d)", &x, &y) != 2) {
+        raisef("Invalid task (%d): invalid tile list", i);
+      }
+      undug.insert(Point(x, y));
+    }
+
+    if (c != '\n') {
+      raisef("Invalid task line: %d", i);
+    }
+
+    tasks.push_back(new Dig(undug));
+  }
+}
+
+
+void load_actors (FILE* file, Pool& actors) {
+  long int size = 0;
 
   int ret = fscanf(file, "Actors: %ld\n", &size);
   if (ret == EOF) {
-    if (ferror(file)) {
-      raisef(fmt, strerror(errno));
-    }
-    else {
-      raisef(fmt, "Premature EOF");
-    }
+    raisef("Failed to read actors: %s",
+        ferror(file) ? strerror(errno) : "Premature EOF");
   }
   else if (ret == 0) {
-    raisef(fmt, "Invalid header!");
+    raise("Invalid actor header");
   }
-
-  actors.reserve(size);
 
   for (int i = 0; i < size; ++i) {
     int x, y;
     if (fscanf(file, "(%d, %d)\n", &x, &y) != 2) {
-      raisef(fmt, "Invalid actor!");
+      raise("Invalid actor");
     }
     actors.push_back(new Actor(x, y));
   }
