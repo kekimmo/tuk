@@ -249,7 +249,7 @@ void game_main (UI& ui, const Textures& tex, Level& level, Pool& actors, Tasklis
 
     Uint32 ticks_now = SDL_GetTicks();
     if (advance || (freerun && ticks_now - ticks > 100)) {
-      fprintf(stderr, "- Tasks: %ld\n", tasks.size());
+      //fprintf(stderr, "- Tasks: %ld\n", tasks.size());
       ticks = ticks_now;
 
       // Finished tasks are deleted
@@ -354,14 +354,13 @@ void inner_main () {
   Textures tex = load_textures();
   
   LoadState state;
-  load("sav/023.sav", state);
+  load("sav/026.sav", state);
 
   //SDL_WM_GrabInput(SDL_GRAB_ON);
 
   Level* level = state.level;
   auto& actors = state.actors;
   auto& tasks = state.tasks;
-  tasks.push_back(new Mine());
 
   UI ui(win_w, win_h, *level, actors, tasks);
 
