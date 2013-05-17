@@ -48,11 +48,40 @@ bool Level::diggable (const Point& p) const {
 }
 
 
-bool Level::surrounded (const Point& p) const {
+bool Level::surrounded (int x, int y) const {
   return
-   !this->valid(p.x, p.y) || !(passable(p.x - 1, p.y) ||
-                               passable(p.x + 1, p.y) ||
-                               passable(p.x, p.y - 1) ||
-                               passable(p.x, p.y + 1));
+   !this->valid(x, y) || !(passable(x - 1, y) ||
+                           passable(x + 1, y) ||
+                           passable(x, y - 1) ||
+                           passable(x, y + 1));
+}
+
+
+bool Level::surrounded (const Point& p) const {
+  return surrounded(p.x, p.y);
+}
+
+
+bool Level::has_tiles_of_type (Tile::Type type) const {
+  std::set<Point> tiles;
+  for (int i = 0; i < w * h; ++i) {
+    if (_tiles[i].type == type) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
+std::set<Point> Level::tiles_of_type (Tile::Type type) const {
+  std::set<Point> tiles;
+  for (int y = 0; y < h; ++y) {
+    for (int x = 0; x < w; ++x) {
+      if (tile(x, y).type == type) {
+        tiles.insert(Point(x, y));
+      }
+    }
+  }
+  return tiles;
 }
 

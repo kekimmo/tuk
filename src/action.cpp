@@ -57,10 +57,12 @@ MineAction::MineAction (Actor& actor, const Point& target, Level& level)
 
 void MineAction::perform () const {
   Tile& tile = level.tile(target.x, target.y);
-  if (tile.hp > 0) {
-    tile.hp -= 1;
+  if (tile.type == Tile::GOLD && actor.item == Item::NOTHING) {
+    tile.hp -= 5;
+    actor.item = Item::GOLD_ORE;
   }
-  if (tile.hp == 0) {
+
+  if (tile.hp <= 0) {
     tile.type = Tile::FLOOR;
   }
 }
@@ -70,4 +72,24 @@ std::string MineAction::str () const {
       actor.p.x, actor.p.y,
       target.x, target.y);
 }
+
+
+DepositAction::DepositAction (Actor& actor, const Point& target, Level& level)
+  : Action(actor), target(target), level(level) {
+}
+
+void DepositAction::perform () const {
+  Tile& tile = level.tile(target.x, target.y);
+  if (tile.depositable() && actor.item == Item::GOLD_ORE) {
+    tile.hp += 1;
+    actor.item = Item::NOTHING;
+  }
+}
+
+std::string DepositAction::str () const {
+  return format("(%d, %d): Deposit to (%d, %d)",
+      actor.p.x, actor.p.y,
+      target.x, target.y);
+}
+
 

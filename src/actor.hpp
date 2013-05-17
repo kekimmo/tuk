@@ -3,6 +3,7 @@
 
 
 #include "vec.hpp"
+#include "item.hpp"
 
 
 class Actor {
@@ -10,6 +11,7 @@ class Actor {
     Vec<int> p;
 
     Actor (int x, int y);
+    Item item = Item::NOTHING;
 };
 
 

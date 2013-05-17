@@ -7,7 +7,7 @@
 #include "level.hpp"
 #include "tile.hpp"
 #include "actor.hpp"
-#include "dig.hpp"
+#include "task.hpp"
 
 
 struct SaveState {
@@ -26,8 +26,13 @@ struct LoadState {
 
 
 void save (FILE* file, const SaveState& state);
+
 void save_tasks (FILE* file, const Tasklist& tasks);
-void save_task (FILE* file, const Dig& task);
+void save_task (FILE* file, const Task& task);
+
+template<typename T>
+void save_task_if_of_type (FILE* file, const Task& task);
+
 void save_actors (FILE* file, const Pool& actors);
 void save_level (FILE* file, const Level& level);
 void save_tile (FILE* file, const Tile& tile);

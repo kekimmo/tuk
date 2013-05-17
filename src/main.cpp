@@ -28,7 +28,7 @@ extern "C" {
 #include "save.hpp"
 #include "ui.hpp"
 #include "path.hpp"
-#include "dig.hpp"
+#include "task.hpp"
 
 
 const int TILE_SIZE = 32;
@@ -159,7 +159,7 @@ void game_main (UI& ui, const Textures& tex, Level& level, Pool& actors, Tasklis
 
             case SDLK_i:
               tmp = ui.mouse_tile();
-              fprintf(stderr, "(%d, %d)\n", tmp.x, tmp.y);
+              fprintf(stderr, "(%d, %d): %d\n", tmp.x, tmp.y, level.tile(tmp).hp);
               break;
 
             case SDLK_e:
@@ -240,14 +240,14 @@ void game_main (UI& ui, const Textures& tex, Level& level, Pool& actors, Tasklis
 
     Uint32 ticks_now = SDL_GetTicks();
     if (advance || (freerun && ticks_now - ticks > 100)) {
-      //fprintf(stderr, "- Tasks: %ld\n", tasks.size());
+      fprintf(stderr, "- Tasks: %ld\n", tasks.size());
       ticks = ticks_now;
 
       // Finished tasks are deleted
-      tasks.remove_if([](Dig* task) {
+      tasks.remove_if([&level](Task* task) {
         //fprintf(stderr, "Task %p has %ld undug tiles.\n",
         //  task, task->undug_tiles.size());
-        if (task->finished()) {
+        if (task->finished(level)) {
           delete task;
           return true;
         }
@@ -262,7 +262,7 @@ void game_main (UI& ui, const Textures& tex, Level& level, Pool& actors, Tasklis
       Pool idle = actors;
       Pool working;
 
-      for (Dig* task : tasks) {
+      for (Task* task : tasks) {
         // Actual work is done
         std::list<Action*> actions = task->work(dbg, level, idle, working);
         //fprintf(stderr, "- Actions -\n");
@@ -294,6 +294,7 @@ Textures load_textures () {
     load_texture("tex/remove-inaccessible.png", TILE_SIZE),
     load_texture("tex/undug-blue.png", TILE_SIZE),
     load_texture("tex/actor.png", TILE_SIZE / 2),
+    load_texture("tex/actor_gold_ore.png", TILE_SIZE / 2),
     load_texture("tex/path.png", TILE_SIZE),
     load_texture("tex/floor.png", TILE_SIZE),
     load_texture("tex/gold.png", TILE_SIZE),
@@ -307,6 +308,11 @@ Textures load_textures () {
       load_texture("tex/wall-LT.png", TILE_SIZE / 2),
       load_texture("tex/wall-CT.png", TILE_SIZE / 2),
       load_texture("tex/wall-LCT.png", TILE_SIZE / 2),
+    },
+    {
+      load_texture("tex/hoard-0.png", TILE_SIZE),
+      load_texture("tex/hoard-50.png", TILE_SIZE),
+      load_texture("tex/hoard-100.png", TILE_SIZE),
     },
   };
 
@@ -339,13 +345,14 @@ void inner_main () {
   Textures tex = load_textures();
   
   LoadState state;
-  load("sav/017.sav", state);
+  load("sav/023.sav", state);
 
   //SDL_WM_GrabInput(SDL_GRAB_ON);
 
   Level* level = state.level;
   auto& actors = state.actors;
   auto& tasks = state.tasks;
+  tasks.push_back(new Mine());
 
   UI ui(win_w, win_h, *level, actors, tasks);
 

@@ -17,11 +17,13 @@ struct Textures {
   GLuint remove_inaccessible;
   GLuint undug;
   GLuint actor;
+  GLuint actor_gold_ore;
   GLuint path;
   GLuint floor;
   GLuint gold;
   GLuint wall_full;
   GLuint wall_parts[8];
+  GLuint hoard[3];
 };
 
 

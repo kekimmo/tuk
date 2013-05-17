@@ -11,7 +11,7 @@ add_executable(main
   path.cpp
   action.cpp
   ui.cpp
-  dig.cpp
+  task.cpp
   string.cpp
   area.cpp
 )

@@ -7,7 +7,7 @@
 #include "selection.hpp"
 #include "actor.hpp"
 #include "texture.hpp"
-#include "dig.hpp"
+#include "task.hpp"
 
 #include <map>
 #include <list>
@@ -75,6 +75,7 @@ struct UI {
       Tile::FLOOR,
       Tile::WALL,
       Tile::GOLD,
+      Tile::HOARD,
     };
     long unsigned int brush_tile_selected = 0;
   } editor;
@@ -113,7 +114,7 @@ struct UI {
   void draw_sidebar () const;
   void draw_minimap () const;
   void draw_selection (const Selection& sel, int texture_size, GLuint sel_tex) const;
-  void draw_actors (const std::map<Point, std::list<const Actor*>>& occupied_tiles, int texture_size, GLuint tex_actor) const;
+  void draw_actors (const std::map<Point, std::list<const Actor*>>& occupied_tiles, int texture_size, const Textures& tex) const;
   void draw_level (const Level& level, const Textures& tex, int texture_size) const;
   void draw_tile (const Level& level, int x, int y,
       const Textures& tex, int texture_size) const;

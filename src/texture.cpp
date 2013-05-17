@@ -20,6 +20,9 @@ GLuint cursor_texture (const Textures& tex, const Tile::Type type) {
     case Tile::GOLD:
       return tex.gold;
 
+    case Tile::HOARD:
+      return tex.hoard[0];
+
     default:
       raisef("Tried to get cursor texture for a weird tile: %d [%c]",
           type, type);

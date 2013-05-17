@@ -6,10 +6,16 @@ Tile::Tile () {
 }
 
 
+bool Tile::depositable () const {
+  return type == HOARD && hp < 1000;
+}
+
+
 void tile_freshen (Tile& tile, Tile::Type type) {
+  tile.hp = 0;
+
   switch (type) {
     case Tile::FLOOR:
-      tile.hp = 0;
       break;
 
     case Tile::WALL:
@@ -18,6 +24,9 @@ void tile_freshen (Tile& tile, Tile::Type type) {
 
     case Tile::GOLD:
       tile.hp = 100;
+      break;
+
+    case Tile::HOARD:
       break;
   }
 

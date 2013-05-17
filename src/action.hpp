@@ -55,5 +55,14 @@ struct MineAction : public Action {
 };
 
 
+struct DepositAction : public Action {
+  DepositAction (Actor& actor, const Point& target, Level& level);
+  virtual void perform () const override;
+  virtual std::string str () const override;
+
+  const Point target;
+  Level& level;
+};
+
 #endif /* end of include guard: ACTION_HPP_RKI6CFHG */
 

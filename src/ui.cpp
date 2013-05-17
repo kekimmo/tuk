@@ -82,9 +82,9 @@ void UI::cancel () {
 void UI::start_digging (const std::set<Point>& tiles) {
   // Get all tiles already ordered to be dug
   std::set<Point> all_undug_tiles;
-  for (Dig* task : tasks) {
-    all_undug_tiles.insert(task->undug_tiles.begin(), task->undug_tiles.end());
-  }
+  tasks.foreach<Dig>([&all_undug_tiles](Dig& task) {
+    all_undug_tiles.insert(task.undug_tiles.begin(), task.undug_tiles.end());
+  });
 
   // Get all tiles that can be dug and aren't already ordered to be
   std::set<Point> tiles_to_be_dug;
@@ -315,14 +315,14 @@ void UI::draw (const Textures& tex, const DebugInfo& dbg) const {
   }
 
   if (layers.actors) {
-    draw_actors(occupied_tiles, TILE_SIZE, tex.actor);
+    draw_actors(occupied_tiles, TILE_SIZE, tex);
   }
 
-  for (const Dig* task : tasks) {
-    for (const Point& p : task->undug_tiles) {
+  tasks.foreach<Dig>([this,&tex](const Dig& task) {
+    for (const Point& p : task.undug_tiles) {
       draw_texture(p * TILE_SIZE, tex.undug, TILE_SIZE);
     }
-  }
+  });
 
   for (const Point& p : dbg.workable_tiles) {
     draw_texture(p * TILE_SIZE, tex.remove, TILE_SIZE);
@@ -405,11 +405,22 @@ void UI::draw_minimap () const {
   for (int y = 0; y < level.w; ++y) {
     for (int x = 0; x < level.h; ++x) {
       Tile::Type type = level.tile(x, y).type;
-      if (type != Tile::WALL) {
-        glColor3ub(255, 178, 127);
-      }
-      else {
-        glColor3ub(127, 51, 0);
+      switch (type) {
+        case Tile::WALL:
+          glColor3ub(127, 51, 0);
+          break;
+
+        case Tile::FLOOR:
+          glColor3ub(255, 178, 127);
+          break;
+
+        case Tile::GOLD:
+          glColor3ub(255, 216, 0);
+          break;
+
+        case Tile::HOARD:
+          glColor3ub(0, 0, 0);
+          break;
       }
       glVertex2d(x, y);
     }
@@ -436,7 +447,7 @@ void UI::draw_selection (const Selection& sel, int texture_size, GLuint sel_tex)
 
 
 void UI::draw_actors (const std::map<Point, std::list<const Actor*>>& occupied_tiles,
-    int texture_size, GLuint tex_actor) const {
+    int texture_size, const Textures& tex) const {
   for (const auto& kv : occupied_tiles) {
     const Point& p = kv.first;
     const auto& actors = kv.second;
@@ -474,8 +485,16 @@ void UI::draw_actors (const std::map<Point, std::list<const Actor*>>& occupied_t
     const D* ds[4] = { d1, d2, d3, d4, };
     const D* d = ds[headcount - 1];
 
+    auto it = actors.cbegin();
     for (int i = 0; i < headcount; ++i) {
-      draw_texture(tx + d[i].x, ty + d[i].y, tex_actor, texture_size / 2);
+      const int fx = tx + d[i].x;
+      const int fy = ty + d[i].y;
+
+      draw_texture(fx, fy, tex.actor, texture_size / 2);
+      if ((**it).item == Item::GOLD_ORE) {
+        draw_texture(fx, fy, tex.actor_gold_ore, texture_size / 2);
+      }
+      ++it;
     }
   }
 }
@@ -564,6 +583,18 @@ void UI::draw_tile (const Level& level, int x, int y,
       draw_texture(px, py, tex.gold, texture_size);
     }
   }
+  else if (tile.type == Tile::HOARD) {
+    int fill = 0;
+    if (tile.hp == 999) {
+      fill = 2;
+    }
+    else if (tile.hp > 0) {
+      fill = 1;
+    }
+
+    draw_texture(px, py, tex.hoard[fill], texture_size);
+  }
+  
 }
 
 

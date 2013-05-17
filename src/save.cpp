@@ -1,6 +1,7 @@
 
 #include <cerrno>
 #include <cstring>
+#include <typeinfo>
 #include "exception.hpp"
 #include "save.hpp"
 
@@ -18,9 +19,15 @@ void save (FILE* file, const SaveState& state) {
 
 void save_tasks (FILE* file, const Tasklist& tasks) {
   fprintf(file, "Tasks: %ld\n", tasks.size());
-  for (const Dig* task : tasks) {
+  for (const Task* task : tasks) {
     save_task(file, *task);
   }
+}
+
+
+void save_task (FILE* file, const Task& task) {
+  save_task_if_of_type<Dig>(file, task);
+  save_task_if_of_type<Mine>(file, task);
 }
 
 
@@ -30,6 +37,20 @@ void save_task (FILE* file, const Dig& task) {
     fprintf(file, " (%d, %d)", p.x, p.y);
   }
   fprintf(file, "\n");
+}
+
+
+void save_task (FILE* file, const Mine& task) {
+  fprintf(file, "Mine:\n");
+}
+
+
+template<typename T>
+void save_task_if_of_type (FILE* file, const Task& task) {
+  const T* cast_task = dynamic_cast<const T*>(&task);
+  if (cast_task != NULL) {
+    save_task(file, *cast_task);
+  }
 }
 
 
@@ -102,26 +123,27 @@ void load_tasks (FILE* file, Tasklist& tasks) {
       raisef("Invalid task (%d)", i);
     }
 
-    if (strcmp(type, "Dig") != 0) {
-      raisef("Unknown task type: %s", type);
-    }
-
-    std::set<Point> undug;
     char c;
-    int x;
-    int y;
-    while ((c = fgetc(file)) == ' ') {
-      if (fscanf(file, "(%d, %d)", &x, &y) != 2) {
-        raisef("Invalid task (%d): invalid tile list", i);
+    if (strcmp(type, "Dig") == 0) {
+      std::set<Point> undug;
+      int x;
+      int y;
+      while ((c = fgetc(file)) == ' ') {
+        if (fscanf(file, "(%d, %d)", &x, &y) != 2) {
+          raisef("Invalid task (%d): invalid tile list", i);
+        }
+        undug.insert(Point(x, y));
       }
-      undug.insert(Point(x, y));
+      tasks.push_back(new Dig(undug));
+    }
+    else if (strcmp(type, "Mine") == 0) {
+      tasks.push_back(new Mine());
+      c = fgetc(file);
     }
 
     if (c != '\n') {
       raisef("Invalid task line: %d", i);
     }
-
-    tasks.push_back(new Dig(undug));
   }
 }
 

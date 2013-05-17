@@ -3,6 +3,7 @@
 
 #include "tile.hpp"
 #include "vec.hpp"
+#include <set>
 
 
 class Level
@@ -16,7 +17,11 @@ public:
   Tile& tile (const Point& p) const;
   bool passable (int x, int y) const;
   bool diggable (const Point& p) const;
+  bool surrounded (int x, int y) const;
   bool surrounded (const Point& p) const;
+
+  bool has_tiles_of_type (Tile::Type type) const;
+  std::set<Point> tiles_of_type (Tile::Type type) const;
 
   const int w;
   const int h;

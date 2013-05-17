@@ -9,11 +9,14 @@ struct Tile {
     FLOOR = ' ',
     WALL = '#',
     GOLD = '$',
+    HOARD = 'H',
   };
-  static constexpr const char* TYPECHARS = " #$";
+  static constexpr const char* TYPECHARS = " #$H";
 
   Type type = WALL;
   int hp = 0;
+
+  bool depositable () const;
 };
 
 
