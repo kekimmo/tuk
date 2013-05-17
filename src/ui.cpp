@@ -51,7 +51,15 @@ void UI::accept () {
 
     case EDITING:
       for (const Point& p : finish_selecting()) {
-        tile_freshen(level.tile(p), editor.brush_tiles[editor.brush_tile_selected]);
+        if (editor.brush_type == editor.TILE) {
+          tile_freshen(level.tile(p), editor.brush_tiles[editor.brush_tile_selected]);
+        }
+        else if (editor.brush_type == editor.ACTOR) {
+          actors.push_back(new Actor(p.x, p.y));
+        }
+        else {
+          raisef("Unknown brush type (%d)", editor.brush_type);
+        }
       }
       // Immediately enter editing mode again
       start_selecting(EDITING);
@@ -324,8 +332,10 @@ void UI::draw (const Textures& tex, const DebugInfo& dbg) const {
     }
   });
 
-  for (const Point& p : dbg.workable_tiles) {
-    draw_texture(p * TILE_SIZE, tex.remove, TILE_SIZE);
+  if (layers.workable) {
+    for (const Point& p : dbg.workable_tiles) {
+      draw_texture(p * TILE_SIZE, tex.remove, TILE_SIZE);
+    }
   }
 
   //for (const Point& p : dbg.unworkable_tiles) {
@@ -340,8 +350,10 @@ void UI::draw (const Textures& tex, const DebugInfo& dbg) const {
     }
   }
 
-  const GLuint brush = cursor_texture(tex,
-      editor.brush_tiles[editor.brush_tile_selected]);
+  const GLuint brush = editor.brush_type == editor.TILE
+    ? cursor_texture(tex, editor.brush_tiles[editor.brush_tile_selected])
+    : tex.actor;
+
   const bool editing = select_for == EDITING;
 
   const Point& mt = mouse_tile();
@@ -491,7 +503,7 @@ void UI::draw_actors (const std::map<Point, std::list<const Actor*>>& occupied_t
       const int fy = ty + d[i].y;
 
       draw_texture(fx, fy, tex.actor, texture_size / 2);
-      if ((**it).item == Item::GOLD_ORE) {
+      if ((**it).has_any(Item::GOLD_ORE)) {
         draw_texture(fx, fy, tex.actor_gold_ore, texture_size / 2);
       }
       ++it;

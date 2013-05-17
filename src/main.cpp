@@ -138,6 +138,9 @@ void game_main (UI& ui, const Textures& tex, Level& level, Pool& actors, Tasklis
               toggle(ui.layers.actors);
               break;
             case SDLK_3:
+              toggle(ui.layers.workable);
+              break;
+            case SDLK_4:
               toggle(ui.layers.paths);
               break;
 
@@ -185,6 +188,12 @@ void game_main (UI& ui, const Textures& tex, Level& level, Pool& actors, Tasklis
 
             case SDLK_w:
               ui.tile_next();
+              break;
+
+            case SDLK_a:
+              ui.editor.brush_type = (ui.editor.brush_type == ui.editor.TILE)
+                ? ui.editor.ACTOR
+                : ui.editor.TILE;
               break;
 
             case SDLK_RETURN:

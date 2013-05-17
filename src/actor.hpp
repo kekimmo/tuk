@@ -11,7 +11,14 @@ class Actor {
     Vec<int> p;
 
     Actor (int x, int y);
-    Item item = Item::NOTHING;
+
+    bool has_space () const;
+    void get (const Item& item);
+    bool has_any (const Item& item) const;
+    int remove_items_of_type (const Item& item);
+
+    static const int ITEM_LIMIT = 5;
+    Itemlist items;
 };
 
 

@@ -63,7 +63,8 @@ struct UI {
   struct {
     bool tiles = true;
     bool actors = true;
-    bool paths = true;
+    bool workable = false;
+    bool paths = false;
   } layers;
 
   struct {

@@ -122,8 +122,28 @@ std::list<Action*> Mine::work (DebugInfo& dbg, Level& level,
     Pool& idle, Pool& working) {
   std::list<Action*> actions;
 
+  // Those who have space should mine
+  const auto& has_space = [](const Actor& worker) {
+    return worker.has_space();
+  };
+
+  for (const Point& target : level.tiles_of_type(Tile::GOLD)) {
+    if (idle.empty()) {
+      break;
+    }
+    
+    if (!level.surrounded(target)) {
+      Action* action = approach_or_act<MineAction>(dbg, idle, working,
+          target, level, has_space);
+      if (action) {
+        actions.push_back(action);
+      }
+    }
+  }
+
+  // Those who have no space but do have ore should deposit it
   const auto& has_gold_ore = [](const Actor& worker) {
-    return worker.item == Item::GOLD_ORE;
+    return worker.has_any(Item::GOLD_ORE);
   };
 
   for (const Point& hoard : level.tiles_of_type(Tile::HOARD)) {
@@ -139,24 +159,6 @@ std::list<Action*> Mine::work (DebugInfo& dbg, Level& level,
       }
       else {
         break;
-      }
-    }
-  }
-
-  const auto& has_space = [](const Actor& worker) {
-    return worker.item == NOTHING;
-  };
-
-  for (const Point& target : level.tiles_of_type(Tile::GOLD)) {
-    if (idle.empty()) {
-      break;
-    }
-    
-    if (!level.surrounded(target)) {
-      Action* action = approach_or_act<MineAction>(dbg, idle, working,
-          target, level, has_space);
-      if (action) {
-        actions.push_back(action);
       }
     }
   }

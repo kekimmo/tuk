@@ -1,6 +1,8 @@
 
 #include "action.hpp"
 #include "string.hpp"
+#include "exception.hpp"
+#include <algorithm>
 
 
 Action::Action (Actor& actor) : actor(actor) {}
@@ -57,13 +59,15 @@ MineAction::MineAction (Actor& actor, const Point& target, Level& level)
 
 void MineAction::perform () const {
   Tile& tile = level.tile(target.x, target.y);
-  if (tile.type == Tile::GOLD && actor.item == Item::NOTHING) {
-    tile.hp -= 5;
-    actor.item = Item::GOLD_ORE;
+  if (tile.type == Tile::GOLD && actor.has_space()) {
+    tile.hp -= 1;
+    actor.get(Item::GOLD_ORE);
+    if (tile.hp <= 0) {
+      tile.type = Tile::FLOOR;
+    }
   }
-
-  if (tile.hp <= 0) {
-    tile.type = Tile::FLOOR;
+  else {
+    // Failed to mine (perhaps someone else did it first?)
   }
 }
 
@@ -80,9 +84,14 @@ DepositAction::DepositAction (Actor& actor, const Point& target, Level& level)
 
 void DepositAction::perform () const {
   Tile& tile = level.tile(target.x, target.y);
-  if (tile.depositable() && actor.item == Item::GOLD_ORE) {
-    tile.hp += 1;
-    actor.item = Item::NOTHING;
+  const int amount = std::count(actor.items.cbegin(), actor.items.cend(),
+      Item::GOLD_ORE);
+  const int max_deposit = std::min(amount, 999 - tile.hp);
+  if (tile.depositable() && max_deposit > 0) {
+    tile.hp += max_deposit;
+    for (int i = 0; i < max_deposit; ++i) {
+      actor.items.remove(Item::GOLD_ORE);
+    }
   }
 }
 
